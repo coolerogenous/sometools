@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闲鱼封面生成器 - Google风格</title>
+    <style>
+        :root {
+            --g-blue: #4285F4;
+            --g-red: #EA4335;
+            --g-yellow: #FBBC05;
+            --g-green: #34A853;
+            --bg-color: #f8f9fa;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        
+        .container {
+            display: flex;
+            gap: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 300px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--g-blue); }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+        }
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .color-btn.active { transform: scale(1.1); box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+
+        canvas {
+            width: 400px;
+            height: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+        }
+
+        .btn-download {
+            margin-top: 20px;
+            background-color: var(--g-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+            text-align: center;
+        }
+        .btn-download:hover { background-color: #3367d6; }
+
+    </style>
+</head>
+<body>
+
+    <h1>闲鱼封面生成器 (Google Style)</h1>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <label>主色调 (Theme Color)</label>
+                <div class="color-picker" id="colorPicker">
+                    <div class="color-btn active" style="background: #4285F4;" data-color="#4285F4" data-name="blue"></div>
+                    <div class="color-btn" style="background: #EA4335;" data-color="#EA4335" data-name="red"></div>
+                    <div class="color-btn" style="background: #FBBC05;" data-color="#FBBC05" data-name="yellow"></div>
+                    <div class="color-btn" style="background: #34A853;" data-color="#34A853" data-name="green"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>主标题 (产品名)</label>
+                <input type="text" id="mainTitle" value="Gemini 3.0 Pro">
+            </div>
+
+            <div class="input-group">
+                <label>副标题 (卖点)</label>
+                <input type="text" id="subTitle" value="正规代认 | 独立账号">
+            </div>
+
+            <div class="input-group">
+                <label>底部标签 (或价格)</label>
+                <input type="text" id="tagText" value="安全 · 稳定 · 不封号">
+            </div>
+
+            <div class="input-group">
+                <label>店铺名称 (水印)</label>
+                <input type="text" id="shopName" value="@您的店铺名">
+            </div>
+            
+            <button class="btn-download" onclick="downloadImage()">下载封面图</button>
+        </div>
+
+        <canvas id="canvas" width="800" height="800"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 状态变量
+        let config = {
+            mainColor: '#4285F4', // 默认蓝色
+            mainTitle: '',
+            subTitle: '',
+            tagText: '',
+            shopName: ''
+        };
+
+        // 获取DOM元素
+        const inputs = {
+            mainTitle: document.getElementById('mainTitle'),
+            subTitle: document.getElementById('subTitle'),
+            tagText: document.getElementById('tagText'),
+            shopName: document.getElementById('shopName')
+        };
+
+        // 初始化
+        function init() {
+            // 绑定输入事件
+            Object.keys(inputs).forEach(key => {
+                inputs[key].addEventListener('input', updateCanvas);
+            });
+
+            // 绑定颜色选择
+            const colorBtns = document.querySelectorAll('.color-btn');
+            colorBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // 移除其他选中状态
+                    colorBtns.forEach(b => {
+                        b.classList.remove('active');
+                        b.style.borderColor = 'transparent';
+                    });
+                    // 设置当前选中
+                    e.target.classList.add('active');
+                    e.target.style.borderColor = '#333';
+                    
+                    config.mainColor = e.target.getAttribute('data-color');
+                    updateCanvas();
+                });
+            });
+
+            updateCanvas();
+        }
+
+        // 绘图核心逻辑
+        function updateCanvas() {
+            // 更新配置
+            config.mainTitle = inputs.mainTitle.value;
+            config.subTitle = inputs.subTitle.value;
+            config.tagText = inputs.tagText.value;
+            config.shopName = inputs.shopName.value;
+
+            // 1. 清空画布 & 绘制白色背景
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            // 2. 绘制顶部 Google 四色装饰条
+            const barHeight = 20;
+            ctx.fillStyle = '#4285F4'; ctx.fillRect(0, 0, 200, barHeight);
+            ctx.fillStyle = '#EA4335'; ctx.fillRect(200, 0, 200, barHeight);
+            ctx.fillStyle = '#FBBC05'; ctx.fillRect(400, 0, 200, barHeight);
+            ctx.fillStyle = '#34A853'; ctx.fillRect(600, 0, 200, barHeight);
+
+            // 3. 绘制核心视觉图形 (圆角卡片背景)
+            // 这是一个稍微带点透明度的主色背景，增加层次感
+            ctx.fillStyle = config.mainColor + '10'; // 10是极低的透明度 (hex alpha)
+            roundRect(ctx, 50, 150, 700, 400, 40); // 绘制中间的大方块
+            ctx.fill();
+
+            // 绘制边框
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = config.mainColor;
+            ctx.stroke();
+
+            // 4. 绘制左上角装饰点 (模拟浏览器按钮)
+            ctx.fillStyle = '#EA4335'; ctx.beginPath(); ctx.arc(90, 190, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#FBBC05'; ctx.beginPath(); ctx.arc(120, 190, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#34A853'; ctx.beginPath(); ctx.arc(150, 190, 8, 0, Math.PI*2); ctx.fill();
+
+
+            // 5. 绘制文字
+            ctx.textAlign = 'center';
+
+            // 主标题
+            ctx.fillStyle = '#202124'; // Google 深灰
+            ctx.font = 'bold 80px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.mainTitle, 400, 360);
+
+            // 副标题
+            ctx.fillStyle = config.mainColor; // 使用主色调
+            ctx.font = 'bold 40px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.subTitle, 400, 440);
+
+            // 6. 底部标签栏
+            ctx.fillStyle = config.mainColor;
+            roundRect(ctx, 200, 600, 400, 70, 35); // 胶囊形状
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 32px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.tagText, 400, 646);
+
+            // 7. 底部店铺名 (版权信息)
+            ctx.fillStyle = '#9AA0A6';
+            ctx.font = '24px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.shopName, 400, 760);
+        }
+
+        // 辅助函数：绘制圆角矩形
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // 下载图片
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `闲鱼封面_${config.mainTitle}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>

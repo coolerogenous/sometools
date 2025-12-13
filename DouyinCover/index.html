@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音封面生成器 (配置版)</title>
+    <script src="config.js"></script>
+    <style>
+        body { margin: 0; background-color: #121212; color: #eee; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* 左侧边栏 */
+        .sidebar { width: 360px; background-color: #1e1e1e; padding: 20px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #333; overflow-y: auto; flex-shrink: 0; }
+        .sidebar::-webkit-scrollbar { width: 6px; } 
+        .sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        
+        h1 { margin: 0 0 10px 0; font-size: 18px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        h2 { margin: 15px 0 5px 0; font-size: 12px; color: #888; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* 控件样式 */
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; }
+        
+        input, textarea, button { background: #2c2c2c; border: 1px solid #3d3d3d; color: white; padding: 10px; border-radius: 6px; font-size: 13px; box-sizing: border-box; width: 100%; transition: 0.2s; }
+        input:focus, textarea:focus { border-color: #007aff; outline: none; background: #333; }
+        textarea { resize: vertical; min-height: 70px; font-family: inherit; line-height: 1.4; }
+        
+        /* 颜色选择器特别样式 */
+        input[type="color"] { padding: 0; height: 35px; border: none; background: none; cursor: pointer; }
+        
+        /* 状态显示 */
+        .status-bar { font-size: 12px; padding: 8px; border-radius: 4px; text-align: center; margin-bottom: 15px; }
+        .status-ok { background: rgba(52, 199, 89, 0.15); color: #34c759; border: 1px solid rgba(52, 199, 89, 0.3); }
+        .status-err { background: rgba(255, 59, 48, 0.15); color: #ff3b30; border: 1px solid rgba(255, 59, 48, 0.3); }
+
+        /* 数值高亮 */
+        .val-display { font-family: monospace; font-weight: bold; color: #007aff; }
+        .val-default { color: #34c759; }
+
+        /* 按钮 */
+        .btn-save { background-color: #34c759; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .btn-save:hover { background-color: #2da84a; transform: translateY(-1px); }
+        .btn-blue { background-color: #007aff; }
+        .btn-blue:hover { background-color: #0062cc; }
+
+        /* 预览区 */
+        .preview-area { flex-grow: 1; background-color: #000; display: flex; gap: 30px; padding: 40px; overflow: auto; justify-content: center; align-items: center; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px; }
+        .canvas-wrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .canvas-tag { font-size: 12px; color: #666; background: #222; padding: 4px 10px; border-radius: 10px; border: 1px solid #333; }
+        canvas { box-shadow: 0 20px 50px rgba(0,0,0,0.6); max-height: 85vh; max-width: 45vw; background: #fff; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>🎵 封面生成器 <span style="font-size:12px; opacity:0.5; font-weight:normal">v3.0</span></h1>
+        
+        <div id="configStatus" class="status-bar status-err">正在加载配置文件...</div>
+
+        <h2>1. 尺寸比例</h2>
+        <div class="control-group">
+            <div class="row">
+                <input type="number" id="ratioW" placeholder="宽" style="text-align:center; color:#007aff; font-weight:bold; font-size:16px;">
+                <span style="font-weight:bold; color:#666">:</span>
+                <input type="number" id="ratioH" placeholder="高" style="text-align:center; color:#007aff; font-weight:bold; font-size:16px;">
+            </div>
+            <label style="margin-top:5px">基准高度 (px) <input type="number" id="baseRes" style="width:80px; padding:4px; height:24px;"></label>
+        </div>
+
+        <h2>2. 歌曲信息</h2>
+        <div class="control-group">
+            <label>歌名</label>
+            <input type="text" id="songTitle">
+        </div>
+        <div class="control-group">
+            <label>歌手</label>
+            <input type="text" id="artistName">
+        </div>
+
+        <h2>3. 歌词与字体</h2>
+        <div class="control-group">
+            <textarea id="lyricsText"></textarea>
+        </div>
+        <div class="control-group">
+            <label>字体缩放 <span id="scaleVal" class="val-default">1.0</span></label>
+            <input type="range" id="scaleFactor" min="0.5" max="2.0" step="0.1" list="scaleMarks">
+            <datalist id="scaleMarks"><option value="1.0"></datalist>
+        </div>
+
+        <h2>4. 播放器 UI</h2>
+        <div class="row">
+            <div class="control-group" style="flex:1"><label>当前时间</label><input type="text" id="timeCurr"></div>
+            <div class="control-group" style="flex:1"><label>剩余时间</label><input type="text" id="timeLeft"></div>
+        </div>
+        <div class="control-group" style="margin-top:5px">
+            <label>进度条位置</label>
+            <input type="range" id="progressVal" min="0" max="1" step="0.01">
+        </div>
+
+        <h2>5. 颜色自定义</h2>
+        <div class="row">
+            <div class="control-group" style="flex:1"><label>进度条</label><input type="color" id="colProg"></div>
+            <div class="control-group" style="flex:1"><label>进度底色</label><input type="color" id="colProgBg"></div>
+        </div>
+        <div class="row">
+            <div class="control-group" style="flex:1"><label>主按钮</label><input type="color" id="colBtnMain"></div>
+            <div class="control-group" style="flex:1"><label>副按钮</label><input type="color" id="colBtnSide"></div>
+        </div>
+
+        <h2>6. 背景图</h2>
+        <div class="control-group">
+            <input type="file" id="bgInput" accept="image/*">
+            <label style="margin-top:5px">遮罩浓度 (0-1)</label>
+            <input type="range" id="overlayVal" min="0" max="0.9" step="0.05">
+        </div>
+
+        <div class="row" style="margin-top: 20px;">
+            <button class="btn-save btn-blue" onclick="downloadImage('h')">💾 保存横屏</button>
+            <button class="btn-save" onclick="downloadImage('v')">💾 保存竖屏</button>
+        </div>
+    </div>
+
+    <div class="preview-area">
+        <div class="canvas-wrapper">
+            <span class="canvas-tag">横屏预览 (Horizontal)</span>
+            <canvas id="canvasH"></canvas>
+        </div>
+        <div class="canvas-wrapper">
+            <span class="canvas-tag">竖屏预览 (Vertical)</span>
+            <canvas id="canvasV"></canvas>
+        </div>
+    </div>
+
+<script>
+    // === 图标数据 ===
+    const ICONS = {
+        play: "M8 5v14l11-7z", 
+        pause: "M6 19h4V5H6v14zm8-14v14h4V5h-4z",
+        arrowLeft: "M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z",
+        arrowRight: "M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z",
+        volume: "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+        trash: "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+    };
+
+    const cvH = document.getElementById('canvasH');
+    const cvV = document.getElementById('canvasV');
+    const ctxH = cvH.getContext('2d');
+    const ctxV = cvV.getContext('2d');
+    
+    // UI 元素映射
+    const els = {
+        rw: document.getElementById('ratioW'),
+        rh: document.getElementById('ratioH'),
+        res: document.getElementById('baseRes'),
+        title: document.getElementById('songTitle'),
+        artist: document.getElementById('artistName'),
+        lyrics: document.getElementById('lyricsText'),
+        scale: document.getElementById('scaleFactor'),
+        scaleTxt: document.getElementById('scaleVal'),
+        curr: document.getElementById('timeCurr'),
+        left: document.getElementById('timeLeft'),
+        prog: document.getElementById('progressVal'),
+        overlay: document.getElementById('overlayVal'),
+        cProg: document.getElementById('colProg'),
+        cProgBg: document.getElementById('colProgBg'),
+        cBtnMain: document.getElementById('colBtnMain'),
+        cBtnSide: document.getElementById('colBtnSide'),
+        status: document.getElementById('configStatus')
+    };
+    
+    let backgroundImg = null;
+
+    // === 核心：加载配置 ===
+    function loadConfig() {
+        if (typeof CONFIG === 'undefined') {
+            els.status.textContent = "❌ 未检测到配置文件 (config.js)";
+            els.status.className = "status-bar status-err";
+            return;
+        }
+
+        try {
+            // 填充数据
+            els.rw.value = CONFIG.ratio.width;
+            els.rh.value = CONFIG.ratio.height;
+            els.res.value = CONFIG.baseResolution;
+            els.title.value = CONFIG.song.title;
+            els.artist.value = CONFIG.song.artist;
+            els.lyrics.value = CONFIG.lyrics;
+            els.scale.value = CONFIG.fontScale;
+            els.curr.value = CONFIG.player.currentTime;
+            els.left.value = CONFIG.player.timeLeft;
+            els.prog.value = CONFIG.player.progress;
+            els.overlay.value = CONFIG.appearance.overlayOpacity;
+            
+            // 填充颜色
+            els.cProg.value = CONFIG.colors.progressBar;
+            els.cProgBg.value = CONFIG.colors.progressBackground;
+            els.cBtnMain.value = CONFIG.colors.mainButtons;
+            els.cBtnSide.value = CONFIG.colors.functionButtons;
+
+            updateScaleText(CONFIG.fontScale);
+
+            // 加载网络背景图
+            if (CONFIG.appearance.backgroundImageUrl) {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = () => { backgroundImg = img; drawAll(); };
+                img.src = CONFIG.appearance.backgroundImageUrl;
+            }
+
+            els.status.textContent = "✅ 配置已加载 (修改 config.js 后请强制刷新)";
+            els.status.className = "status-bar status-ok";
+            
+            updateDimensions(); // 开始绘制
+
+        } catch (e) {
+            console.error(e);
+            els.status.textContent = "⚠️ 配置文件语法错误，请检查标点符号";
+            els.status.className = "status-bar status-err";
+        }
+    }
+
+    // === 事件监听 ===
+    document.querySelectorAll('input, textarea').forEach(el => {
+        if(el.type === 'file') return;
+        el.addEventListener('input', () => {
+            if (el.id === 'scaleFactor') updateScaleText(el.value);
+            if(['ratioW', 'ratioH', 'baseRes'].includes(el.id)) {
+                updateDimensions();
+            } else {
+                drawAll();
+            }
+        });
+    });
+
+    document.getElementById('bgInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => { backgroundImg = img; drawAll(); }
+            img.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    function updateScaleText(val) {
+        const floatVal = parseFloat(val);
+        els.scaleTxt.textContent = floatVal === 1.0 ? "1.0 (默认)" : floatVal.toFixed(1);
+        els.scaleTxt.className = floatVal === 1.0 ? "val-default" : "val-display";
+    }
+
+    // === 绘图逻辑 ===
+    function updateDimensions() {
+        const rw = parseFloat(els.rw.value) || 16;
+        const rh = parseFloat(els.rh.value) || 9;
+        const base = parseFloat(els.res.value) || 1080;
+
+        // 横屏尺寸
+        cvH.height = base;
+        cvH.width = base * (rw / rh);
+
+        // 竖屏尺寸 (反转比例)
+        cvV.width = base;
+        cvV.height = base * (rw / rh);
+
+        drawAll();
+    }
+
+    function drawAll() {
+        draw(cvH, ctxH);
+        draw(cvV, ctxV);
+    }
+
+    function draw(canvas, ctx) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const scaleUser = parseFloat(els.scale.value);
+        // 智能缩放基准：取短边计算，保证UI在横竖屏大小一致
+        const minSide = Math.min(w, h);
+        const ratio = (minSide / 1080) * scaleUser; 
+
+        // 1. 清空与背景
+        ctx.clearRect(0, 0, w, h);
+        if (backgroundImg) {
+            const imgRatio = backgroundImg.width / backgroundImg.height;
+            const canvasRatio = w / h;
+            let dw, dh, dx, dy;
+            if (canvasRatio > imgRatio) {
+                dw = w; dh = w / imgRatio; dx = 0; dy = (h - dh) / 2;
+            } else {
+                dh = h; dw = h * imgRatio; dy = 0; dx = (w - dw) / 2;
+            }
+            ctx.drawImage(backgroundImg, dx, dy, dw, dh);
+        } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        const overlay = parseFloat(els.overlay.value);
+        if (overlay > 0) {
+            ctx.fillStyle = `rgba(0,0,0,${overlay})`;
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // 2. 颜色策略 (文字颜色自动，UI颜色强制)
+        const isDark = (backgroundImg || overlay > 0.3);
+        const cTextMain = isDark ? "#ffffff" : "#333333";
+        const cTextSub = isDark ? "#cccccc" : "#888888";
+        
+        // 获取用户配置颜色
+        const cProg = els.cProg.value;
+        const cProgBg = els.cProgBg.value;
+        const cBtnMain = els.cBtnMain.value;
+        const cBtnSide = els.cBtnSide.value;
+
+        // 3. 布局位置计算
+        const headerY = h * 0.15; // 顶部 15% 处
+        const controlsY = h - (h * 0.12); // 底部 12% 处
+        const progressY = controlsY - (100 * ratio); // 进度条在按钮上方
+
+        ctx.textAlign = 'center';
+        
+        // --- 绘制头部信息 ---
+        ctx.fillStyle = cTextMain;
+        ctx.textBaseline = 'bottom';
+        ctx.font = `bold ${50 * ratio}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.fillText(els.title.value, w / 2, headerY);
+
+        ctx.fillStyle = cTextSub;
+        ctx.textBaseline = 'top';
+        ctx.font = `${30 * ratio}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.fillText(els.artist.value, w / 2, headerY + (10 * ratio));
+
+        // --- 绘制 UI 组件 ---
+        const barWidth = w * 0.8; 
+        const barHeight = 12 * ratio;
+        const barX = (w - barWidth) / 2;
+
+        // 进度条底
+        ctx.fillStyle = cProgBg;
+        ctx.beginPath();
+        ctx.roundRect(barX, progressY, barWidth, barHeight, barHeight/2);
+        ctx.fill();
+
+        // 进度条值
+        const prog = parseFloat(els.prog.value);
+        ctx.fillStyle = cProg;
+        ctx.beginPath();
+        ctx.roundRect(barX, progressY, barWidth * prog, barHeight, barHeight/2);
+        ctx.fill();
+
+        // 时间文字
+        ctx.fillStyle = cTextSub;
+        ctx.font = `${24 * ratio}px sans-serif`;
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "right";
+        ctx.fillText(els.curr.value, barX - (20 * ratio), progressY + barHeight/2);
+        ctx.textAlign = "left";
+        ctx.fillText(els.left.value, barX + barWidth + (20 * ratio), progressY + barHeight/2);
+
+        // 按钮绘制
+        const iconSize = 2.5 * ratio;
+        // 动态计算按钮间距，防止窄屏重叠
+        const maxDist = (w / 2) - (40 * ratio);
+        const distSide = Math.min(450 * ratio, maxDist); // 侧边按钮距离
+        const distMid = Math.min(200 * ratio, maxDist * 0.5); // 中间按钮距离
+
+        // 中间暂停键
+        drawIcon(ctx, ICONS.pause, w/2, controlsY, iconSize + 0.5, cBtnMain);
+        
+        // 左箭头 (快退)
+        drawIcon(ctx, ICONS.arrowLeft, w/2 - distMid, controlsY, iconSize, cBtnMain);
+        ctx.fillStyle = cBtnMain;
+        ctx.font = `bold ${14 * ratio}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("15", w/2 - distMid, controlsY + (40 * ratio));
+        
+        // 右箭头 (快进)
+        drawIcon(ctx, ICONS.arrowRight, w/2 + distMid, controlsY, iconSize, cBtnMain);
+        ctx.fillText("15", w/2 + distMid, controlsY + (40 * ratio));
+        
+        // 侧边功能键 (音量/删除)
+        drawIcon(ctx, ICONS.volume, w/2 - distSide, controlsY, iconSize, cBtnSide);
+        drawIcon(ctx, ICONS.trash, w/2 + distSide, controlsY, iconSize, cBtnSide);
+
+        // --- 绘制歌词 ---
+        const areaTop = headerY + (50 * ratio);
+        const areaBottom = progressY - (50 * ratio);
+        const areaCenter = areaTop + (areaBottom - areaTop) / 2;
+
+        ctx.fillStyle = cTextMain;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const fontSize = 120 * ratio; 
+        ctx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+
+        const lines = els.lyrics.value.split('\n');
+        const lineHeight = fontSize * 1.3;
+        const textStartY = areaCenter - ((lines.length - 1) * lineHeight) / 2;
+        
+        lines.forEach((line, i) => {
+            ctx.fillText(line, w / 2, textStartY + i * lineHeight);
+        });
+    }
+
+    // SVG 路径绘制助手
+    function drawIcon(ctx, path, x, y, scale, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.translate(-12, -12); 
+        const p = new Path2D(path);
+        ctx.fillStyle = color;
+        ctx.fill(p);
+        ctx.restore();
+    }
+
+    // 下载图片
+    function downloadImage(type) {
+        const canvas = type === 'h' ? cvH : cvV;
+        const link = document.createElement('a');
+        link.download = `DouyinCover_${type}_${canvas.width}x${canvas.height}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // 启动
+    loadConfig();
+
+</script>
+
+</body>
+</html>
