@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信账单生成器 (自动当前时间版)</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --preview-bg: #ffffff;
+            --wechat-yellow: #f8c03e;
+            --text-primary: #000000;
+            --text-secondary: #888888;
+            --border-color: #e5e5e5;
+            --link-color: #576b95;
+            --system-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--system-font);
+            background-color: #e9e9e9;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 主容器 */
+        .main-container {
+            display: flex;
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 左侧：控制面板 */
+        .controls-panel {
+            flex: 1;
+            padding: 30px;
+            background-color: #f7f9fc;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            min-width: 320px;
+        }
+
+        .controls-panel h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #007aff;
+            outline: none;
+        }
+
+        .tips {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* 右侧：预览区域 */
+        .preview-panel {
+            flex: 1.2;
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* 手机外壳模拟 */
+        .phone-mockup {
+            width: 375px;
+            height: 812px;
+            background-color: #fff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部状态栏 */
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+            z-index: 10;
+        }
+        
+        .status-right {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 18px;
+        }
+        .navbar .close-icon {
+            font-size: 24px;
+            font-weight: 300;
+            color: #000;
+        }
+
+        /* 内容区域 */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* 头部：金额与图标 */
+        .header-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 30px;
+        }
+
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            background-color: var(--wechat-yellow);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .icon-check {
+            width: 28px;
+            height: 14px;
+            border-left: 3px solid white;
+            border-bottom: 3px solid white;
+            transform: rotate(-45deg) translate(2px, -2px);
+        }
+        
+        .payee-text {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .amount-text {
+            font-size: 40px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: "DIN Alternate", -apple-system, sans-serif;
+        }
+
+        /* 详情列表 */
+        .detail-list {
+            padding: 0 24px;
+            margin-bottom: 30px;
+        }
+
+        .list-item {
+            display: flex;
+            margin-bottom: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .item-label {
+            color: var(--text-secondary);
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .item-value {
+            color: var(--text-primary);
+            flex: 1;
+            word-break: break-all;
+        }
+
+        /* 灰色分割条 */
+        .grey-separator {
+            height: 10px;
+            background-color: #f7f7f7;
+            border-top: 1px solid #ececec;
+            border-bottom: 1px solid #ececec;
+        }
+
+        /* 底部服务区域 */
+        .service-section {
+            padding: 0 20px;
+        }
+        
+        .section-title {
+            font-size: 13px;
+            color: #888;
+            margin: 15px 0 10px 0;
+            font-weight: 400;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 15px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+            width: 48%;
+        }
+
+        .action-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            opacity: 0.6;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        .icon-question { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3'/%3E%3Cline x1='12' y1='17' x2='12' y2='17'/%3E%3C/svg%3E"); }
+        .icon-bill { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cline x1='16' y1='13' x2='8' y2='13'/%3E%3Cline x1='16' y1='17' x2='8' y2='17'/%3E%3Cline x1='10' y1='9' x2='8' y2='9'/%3E%3C/svg%3E"); }
+        .icon-card { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'/%3E%3Ccircle cx='9' cy='10' r='2'/%3E%3Cline x1='15' y1='8' x2='17' y2='8'/%3E%3Cline x1='15' y1='12' x2='17' y2='12'/%3E%3Cpath d='M7 16h4'/%3E%3C/svg%3E"); }
+
+        .footer-copyright {
+            text-align: center;
+            font-size: 12px;
+            color: #ccc;
+            padding: 30px 0;
+            margin-top: auto;
+        }
+
+        .signal-icon { font-size: 12px; letter-spacing: -2px;}
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="controls-panel">
+            <h2>⚙️ 参数设置</h2>
+            
+            <div class="form-group">
+                <label>系统时间 (状态栏)</label>
+                <input type="time" id="sysTimeInput">
+            </div>
+
+            <div class="form-group">
+                <label>商户名称</label>
+                <input type="text" id="payeeInput" value="SoCloud">
+            </div>
+
+            <div class="form-group">
+                <label>支付金额</label>
+                <input type="number" id="amountInput" value="267.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>当前状态</label>
+                <input type="text" id="statusInput" value="支付成功">
+            </div>
+
+            <div class="form-group">
+                <label>收款方备注</label>
+                <input type="text" id="remarkInput" value="二维码收款">
+            </div>
+
+            <div class="form-group">
+                <label>转账时间</label>
+                <input type="datetime-local" id="transTimeInput" step="1">
+                <div class="tips">默认当前时间，修改时间会自动刷新单号</div>
+            </div>
+
+            <div class="form-group">
+                <label>转账单号 (根据时间自动生成)</label>
+                <input type="text" id="orderIdInput">
+            </div>
+            
+             <div class="form-group">
+                <label>电量 %</label>
+                <input type="number" id="batteryInput" value="23" min="1" max="100">
+            </div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="phone-mockup">
+                <div class="status-bar">
+                    <div id="sysTimeDisplay"></div>
+                    <div class="status-right">
+                        <span class="signal-icon">📶</span>
+                        <span>5G</span>
+                        <span id="batteryDisplay">🔋 23%</span>
+                    </div>
+                </div>
+
+                <div class="navbar">
+                    <span class="close-icon">✕</span>
+                </div>
+
+                <div class="content">
+                    <div class="header-section">
+                        <div class="icon-circle">
+                            <div class="icon-check"></div>
+                        </div>
+                        <div class="payee-text" id="payeeDisplay">扫二维码付款-给勃瑞康诊所</div>
+                        <div class="amount-text" id="amountDisplay">-30.00</div>
+                    </div>
+
+                    <div class="detail-list">
+                        <div class="list-item">
+                            <div class="item-label">当前状态</div>
+                            <div class="item-value" id="statusDisplay">支付成功</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-label">收款方备注</div>
+                            <div class="item-value" id="remarkDisplay">二维码收款</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-label">支付方式</div>
+                            <div class="item-value">零钱</div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-label">转账时间</div>
+                            <div class="item-value" id="transTimeDisplay"></div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-label">转账单号</div>
+                            <div class="item-value" id="orderIdDisplay"></div>
+                        </div>
+                    </div>
+
+                    <div class="grey-separator"></div>
+
+                    <div class="service-section">
+                        <div class="section-title">账单服务</div>
+                        <div class="action-row">
+                            <div class="action-btn">
+                                <span class="action-icon icon-question"></span>
+                                对订单有疑惑
+                            </div>
+                            <div class="action-btn">
+                                <span class="action-icon icon-bill"></span>
+                                发起群收款
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grey-separator"></div>
+
+                    <div class="service-section">
+                        <div class="section-title">收款方服务</div>
+                        <div class="action-row">
+                            <div class="action-btn">
+                                <span class="action-icon icon-card"></span>
+                                收款方名片
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="footer-copyright">
+                        本服务由财付通提供
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const inputs = {
+            sysTime: document.getElementById('sysTimeInput'),
+            payee: document.getElementById('payeeInput'),
+            amount: document.getElementById('amountInput'),
+            status: document.getElementById('statusInput'),
+            remark: document.getElementById('remarkInput'),
+            transTime: document.getElementById('transTimeInput'),
+            orderId: document.getElementById('orderIdInput'),
+            battery: document.getElementById('batteryInput')
+        };
+
+        const displays = {
+            sysTime: document.getElementById('sysTimeDisplay'),
+            payee: document.getElementById('payeeDisplay'),
+            amount: document.getElementById('amountDisplay'),
+            status: document.getElementById('statusDisplay'),
+            remark: document.getElementById('remarkDisplay'),
+            transTime: document.getElementById('transTimeDisplay'),
+            orderId: document.getElementById('orderIdDisplay'),
+            battery: document.getElementById('batteryDisplay')
+        };
+
+        // ================== 核心逻辑：时间与单号处理 ==================
+        
+        // 1. 获取当前时间并初始化
+        function initCurrentTime() {
+            const now = new Date();
+            
+            // 格式化为 input[type="time"] 需要的 HH:mm
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            inputs.sysTime.value = `${hh}:${mm}`;
+            displays.sysTime.innerText = `${hh}:${mm}`;
+
+            // 格式化为 input[type="datetime-local"] 需要的 YYYY-MM-DDTHH:mm:ss
+            // 注意：Date对象的月份是从0开始的
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            
+            // 设置转账时间输入框的值
+            const isoString = `${year}-${month}-${day}T${hh}:${mm}:${ss}`;
+            inputs.transTime.value = isoString;
+
+            // 触发更新函数，渲染预览文字和生成单号
+            updateTimeAndOrder(isoString);
+        }
+
+        // 2. 根据时间字符串生成单号和预览文本
+        function updateTimeAndOrder(dateValue) {
+            const date = new Date(dateValue);
+            if(isNaN(date.getTime())) return;
+
+            // 预览部分的时间格式: 2026年1月18日 15:40:36
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const h = String(date.getHours()).padStart(2, '0');
+            const m = String(date.getMinutes()).padStart(2, '0');
+            const s = String(date.getSeconds()).padStart(2, '0');
+            
+            displays.transTime.innerText = `${year}年${month}月${day}日 ${h}:${m}:${s}`;
+
+            // 自动生成单号
+            // 规则参考截图: 1000107301 + YYYYMMDD + 14位随机数
+            const dateStr = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+            const prefix = "1000107301";
+            let randomSuffix = "";
+            for(let i=0; i<14; i++) {
+                randomSuffix += Math.floor(Math.random() * 10);
+            }
+            const newOrderId = prefix + dateStr + randomSuffix;
+            
+            inputs.orderId.value = newOrderId;
+            displays.orderId.innerText = newOrderId;
+        }
+
+        // ================== 事件监听器 ==================
+
+        // 页面加载完成后立即初始化
+        window.addEventListener('load', initCurrentTime);
+
+        // 系统时间手动修改
+        inputs.sysTime.addEventListener('input', (e) => {
+            displays.sysTime.innerText = e.target.value;
+        });
+
+        // 转账时间改变 -> 更新显示 + 自动生成新单号
+        inputs.transTime.addEventListener('change', (e) => {
+            updateTimeAndOrder(e.target.value);
+        });
+        
+        // 其他常规输入监听
+        inputs.payee.addEventListener('input', (e) => {
+            displays.payee.innerText = "扫二维码付款-给" + e.target.value;
+        });
+
+        inputs.amount.addEventListener('input', (e) => {
+            let val = parseFloat(e.target.value).toFixed(2);
+            displays.amount.innerText = "-" + val;
+        });
+
+        inputs.status.addEventListener('input', (e) => displays.status.innerText = e.target.value);
+        inputs.remark.addEventListener('input', (e) => displays.remark.innerText = e.target.value);
+        inputs.battery.addEventListener('input', (e) => displays.battery.innerText = "🔋 " + e.target.value + "%");
+        inputs.orderId.addEventListener('input', (e) => displays.orderId.innerText = e.target.value);
+
+    </script>
+</body>
+</html>

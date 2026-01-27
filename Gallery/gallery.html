@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coolerogenous | Digital Archive + Upload</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
+
+    <style>
+        /* --- DESIGN TOKENS (UNCHANGED) --- */
+        :root {
+            --bg-color: #050505;
+            --surface-color: rgba(20, 20, 20, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.2);
+            --text-primary: #E5E5E5;
+            --text-secondary: #888888;
+            
+            --spacing-sm: 16px;
+            --spacing-md: 24px;
+            --spacing-lg: 48px;
+            
+            --card-width: 220px;
+            --card-height: 320px;
+            /* Base radius, will be adjusted dynamically in JS */
+            --base-radius: 450px; 
+            
+            --glass-blur: blur(20px);
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; outline: none; }
+        body {
+            margin: 0; overflow: hidden; background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-color) 60%);
+            font-family: 'Inter', sans-serif; color: var(--text-primary);
+            height: 100vh; width: 100vw;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            position: relative; width: 100%; height: 100%;
+            perspective: 1200px; display: flex; flex-direction: column;
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 50; pointer-events: none;
+        }
+        .brand { pointer-events: auto; display: flex; align-items: center; gap: var(--spacing-sm); }
+        .brand-logo { font-size: 24px; }
+        .brand-name { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
+
+        .nav-controls {
+            pointer-events: auto; display: flex; gap: var(--spacing-sm);
+            background: var(--surface-color); backdrop-filter: var(--glass-blur);
+            padding: 8px; border-radius: 100px; border: 1px solid var(--border-color);
+        }
+
+        /* --- UI COMPONENTS --- */
+        .icon-btn {
+            background: transparent; border: none; color: var(--text-primary);
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s var(--ease-out-expo);
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.1); }
+        .icon-btn.active { background: var(--text-primary); color: var(--bg-color); }
+        .material-symbols-outlined { font-size: 20px; }
+
+        /* Hidden file input */
+        #fileInput { display: none; }
+
+        /* --- 3D STAGE --- */
+        .stage {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            transform-style: preserve-3d; cursor: grab;
+        }
+        .stage:active { cursor: grabbing; }
+
+        .helix-container {
+            position: relative; width: var(--card-width); height: var(--card-height);
+            transform-style: preserve-3d; transition: transform 0.8s var(--ease-out-expo);
+        }
+
+        /* --- CARDS --- */
+        .card {
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+            background: #111; border: 1px solid var(--border-color); border-radius: 4px;
+            overflow: hidden; transform-style: preserve-3d;
+            -webkit-box-reflect: below 2px linear-gradient(transparent, transparent, rgba(0,0,0,0.2));
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .card:hover { border-color: var(--border-highlight); cursor: pointer; }
+        .card img {
+            width: 100%; height: 100%; object-fit: cover; opacity: 0.8;
+            transition: opacity 0.5s, transform 0.5s; filter: grayscale(100%);
+        }
+        .card:hover img { opacity: 1; filter: grayscale(0%); transform: scale(1.05); }
+        .card-meta {
+            position: absolute; bottom: 20px; left: 20px; right: 20px; opacity: 0;
+            transform: translateY(10px); transition: all 0.4s var(--ease-out-expo); pointer-events: none;
+        }
+        .card:hover .card-meta { opacity: 1; transform: translateY(0); }
+        .card-meta h3 { margin: 0; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.05em; color: #fff; }
+        .card-meta p { margin: 4px 0 0 0; font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; }
+
+        /* --- LIGHTBOX --- */
+        .lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.95); backdrop-filter: blur(10px);
+            z-index: 100; display: flex; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        .lightbox.active { opacity: 1; pointer-events: auto; }
+        .lightbox-content {
+            display: grid; grid-template-columns: 1fr 300px; width: 100%; height: 100%; max-width: 1600px; margin: 0 auto;
+        }
+        .lb-image-container { display: flex; align-items: center; justify-content: center; padding: var(--spacing-lg); }
+        .lb-image-container img { max-width: 100%; max-height: 90vh; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border: 1px solid var(--border-color); }
+        .lb-details { display: flex; flex-direction: column; justify-content: center; padding: var(--spacing-lg); border-left: 1px solid var(--border-color); background: rgba(10,10,10,0.5); }
+        .lb-title { font-size: 2rem; font-weight: 300; margin: 0 0 var(--spacing-sm) 0; }
+        .lb-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: var(--spacing-lg); }
+        .lb-meta-row { display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding: var(--spacing-sm) 0; font-size: 0.8rem; }
+        .lb-label { color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; }
+        .close-btn { position: absolute; top: var(--spacing-md); right: var(--spacing-md); background: transparent; border: none; color: white; cursor: pointer; z-index: 110; }
+        .footer-info { position: absolute; bottom: var(--spacing-md); left: var(--spacing-lg); font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 0.05em; pointer-events: none; }
+
+        @media (max-width: 768px) {
+            :root { --card-width: 160px; --card-height: 240px; --base-radius: 280px; --spacing-lg: 24px; }
+            header { padding: var(--spacing-md); }
+            .lightbox-content { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .lb-details { border-left: none; border-top: 1px solid var(--border-color); padding: var(--spacing-md); background: #050505; }
+            .lb-image-container { padding: var(--spacing-md); }
+        }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/jpg, image/gif">
+
+    <div class="app-container">
+        <header>
+            <div class="brand">
+                <span class="material-symbols-outlined brand-logo">deployed_code</span>
+                <span class="brand-name">Coolerogenous</span>
+            </div>
+            
+            <nav class="nav-controls">
+                <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Upload Images">
+                    <span class="material-symbols-outlined" style="color: var(--text-primary)">add_photo_alternate</span>
+                </button>
+                
+                <div style="width: 1px; height: 24px; background: var(--border-color); margin: 0 4px;"></div> <button class="icon-btn" onclick="toggleAutoSpin()" id="play-btn" title="Toggle Rotation">
+                    <span class="material-symbols-outlined">pause</span>
+                </button>
+                <button class="icon-btn" onclick="resetView()" title="Reset View">
+                    <span class="material-symbols-outlined">restart_alt</span>
+                </button>
+            </nav>
+        </header>
+
+        <div class="stage" id="stage">
+            <div class="helix-container" id="helix">
+                </div>
+        </div>
+
+        <div class="footer-info">
+            DRAG TO ROTATE &bull; SCROLL TO ZOOM &bull; UPLOAD YOUR OWN
+        </div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <button class="close-btn icon-btn" onclick="closeLightbox()">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <div class="lightbox-content">
+            <div class="lb-image-container">
+                <img id="lb-img" src="" alt="">
+            </div>
+            <div class="lb-details">
+                <h2 class="lb-title" id="lb-title"></h2>
+                <p class="lb-desc" id="lb-desc"></p>
+                <div class="lb-meta-row">
+                    <span class="lb-label">Source</span>
+                    <span id="lb-source"></span>
+                </div>
+                <div class="lb-meta-row" style="border-bottom: 1px solid var(--border-color);">
+                    <span class="lb-label">Type</span>
+                    <span id="lb-type"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- INITIAL DATA ---
+        // 使用 let，因为我们会向里面添加新数据
+        let portfolio = [
+            { title: "Project Alpha", type: "Blockchain", source: "System", img: "https://picsum.photos/600/900?random=1", desc: "Initial system demonstration image." },
+            { title: "Neon Vibes", type: "Visual Identity", source: "System", img: "https://picsum.photos/600/900?random=2", desc: "Initial system demonstration image." },
+            { title: "Abstract AI", type: "Generative Art", source: "System", img: "https://picsum.photos/600/900?random=3", desc: "Initial system demonstration image." },
+            { title: "Chengdu Life", type: "Photography", source: "System", img: "https://picsum.photos/600/900?random=4", desc: "Initial system demonstration image." },
+        ];
+
+        const helix = document.getElementById('helix');
+        const baseRadiusPx = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--base-radius'));
+
+        // --- CORE FUNCTION: REBUILD THE 3D SCENE ---
+        function rebuildHelix() {
+            helix.innerHTML = ''; // 清空现有内容
+            const count = portfolio.length;
+            
+            // 动态计算半径：如果图片太多，增加半径以防止重叠
+            // 基础半径 + 每多出一张图增加一点距离
+            let dynamicRadius = baseRadiusPx;
+            if (count > 8) {
+                dynamicRadius += (count - 8) * 35;
+            }
+
+            portfolio.forEach((item, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openLightbox(i);
+                
+                // Positioning Logic
+                const theta = i * (360 / count);
+                // 使用动态计算的半径
+                card.style.transform = `rotateY(${theta}deg) translateZ(${dynamicRadius}px)`;
+
+                card.innerHTML = `
+                    <img src="${item.img}">
+                    <div class="card-meta">
+                        <h3>${item.title}</h3>
+                        <p>${item.type}</p>
+                    </div>
+                `;
+                helix.appendChild(card);
+            });
+            
+            // 重置视角，让新图片更容易被看到
+            resetView();
+        }
+
+        // --- UPLOAD HANDLING ---
+        const fileInput = document.getElementById('fileInput');
+
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            // 暂停旋转，准备加载
+            state.autoSpin = false;
+            updatePlayIcon();
+
+            // 使用 Promise 处理异步文件读取
+            const filePromises = files.map(file => {
+                return new Promise((resolve, reject) => {
+                    if (!file.type.startsWith('image/')) {
+                        resolve(null); // 跳过非图片文件
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        // 创建新的数据对象
+                        resolve({
+                            title: file.name.split('.')[0], // 使用文件名作为标题
+                            type: "User Upload",
+                            source: "Local File",
+                            img: event.target.result, // Base64 数据
+                            desc: "Custom image uploaded by user."
+                        });
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            // 等待所有图片读取完毕
+            Promise.all(filePromises).then(newItems => {
+                // 过滤掉无效的文件 (null)
+                const validItems = newItems.filter(item => item !== null);
+                // 将新图片添加到数组末尾
+                portfolio.push(...validItems);
+                // 重建 3D 场景
+                rebuildHelix();
+                // 清空输入框，允许重复上传同一文件
+                fileInput.value = '';
+                // 恢复自动旋转
+                state.autoSpin = true;
+                updatePlayIcon();
+            });
+        });
+
+        // --- INITIALIZE ---
+        rebuildHelix();
+
+        // --- INTERACTION STATE (UNCHANGED) ---
+        let state = {
+            rotX: -5, rotY: 0, autoSpin: true,
+            isDragging: false, startX: 0, startY: 0, currRotX: -5, currRotY: 0
+        };
+        const speed = 0.15; const dragSpeed = 0.2;
+
+        function animate() {
+            if (state.autoSpin && !state.isDragging) state.rotY -= speed;
+            helix.style.transform = `rotateX(${state.rotX}deg) rotateY(${state.rotY}deg)`;
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        const stage = document.getElementById('stage');
+        const onStart = (x, y) => {
+            state.isDragging = true; state.autoSpin = false; updatePlayIcon();
+            state.startX = x; state.startY = y; state.currRotX = state.rotX; state.currRotY = state.rotY;
+        };
+        const onMove = (x, y) => {
+            if (!state.isDragging) return;
+            const dx = x - state.startX; const dy = y - state.startY;
+            state.rotY = state.currRotY + (dx * dragSpeed);
+            state.rotX = Math.max(-30, Math.min(30, state.currRotX - (dy * dragSpeed)));
+        };
+
+        stage.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+        window.addEventListener('mouseup', () => state.isDragging = false);
+        window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+        stage.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchend', () => state.isDragging = false);
+        window.addEventListener('touchmove', e => onMove(e.touches[0].clientX, e.touches[0].clientY));
+        stage.addEventListener('wheel', (e) => {
+           e.preventDefault();
+           const perspective = parseInt(getComputedStyle(document.querySelector('.app-container')).perspective);
+           let newPerspective = perspective + e.deltaY;
+           newPerspective = Math.max(500, Math.min(2000, newPerspective)); // Limit zoom
+           document.querySelector('.app-container').style.perspective = `${newPerspective}px`;
+        }, {passive:false});
+
+
+        // --- CONTROLS (UNCHANGED) ---
+        function toggleAutoSpin() { state.autoSpin = !state.autoSpin; updatePlayIcon(); }
+        function updatePlayIcon() {
+            const btn = document.querySelector('#play-btn span');
+            const btnContainer = document.getElementById('play-btn');
+            if(state.autoSpin) { btn.innerText = 'pause'; btnContainer.classList.add('active'); }
+            else { btn.innerText = 'play_arrow'; btnContainer.classList.remove('active'); }
+        }
+        updatePlayIcon();
+        function resetView() { state.rotX = -5; state.rotY = 0; state.autoSpin = true; updatePlayIcon(); document.querySelector('.app-container').style.perspective = '1200px'; }
+
+        // --- LIGHTBOX (UNCHANGED) ---
+        const lightbox = document.getElementById('lightbox');
+        function openLightbox(index) {
+            const data = portfolio[index];
+            document.getElementById('lb-img').src = data.img;
+            document.getElementById('lb-title').innerText = data.title;
+            document.getElementById('lb-desc').innerText = data.desc;
+            document.getElementById('lb-source').innerText = data.source;
+            document.getElementById('lb-type').innerText = data.type;
+            lightbox.classList.add('active'); state.autoSpin = false; updatePlayIcon();
+        }
+        function closeLightbox() { lightbox.classList.remove('active'); state.autoSpin = true; updatePlayIcon(); }
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+    </script>
+</body>
+</html>

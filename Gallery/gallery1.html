@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coolerogenous | Digital Archive</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0" />
+
+    <style>
+        /* --- DESIGN TOKENS --- */
+        :root {
+            --bg-color: #050505;
+            --surface-color: rgba(20, 20, 20, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.2);
+            --text-primary: #E5E5E5;
+            --text-secondary: #888888;
+            --accent: #FFFFFF;
+            
+            --spacing-xs: 8px;
+            --spacing-sm: 16px;
+            --spacing-md: 24px;
+            --spacing-lg: 48px;
+            
+            --card-width: 220px;
+            --card-height: 320px;
+            --helix-radius: 450px;
+            
+            --glass-blur: blur(20px);
+            --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; outline: none; }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            /* Subtle noise texture for premium matte feel */
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-color) 60%);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            perspective: 1200px; /* Deeper perspective */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            pointer-events: none; /* Let clicks pass through to 3D scene where empty */
+        }
+
+        .brand {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .brand-logo {
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .brand-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.2em; /* Luxurious tracking */
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+
+        .nav-controls {
+            pointer-events: auto;
+            display: flex;
+            gap: var(--spacing-sm);
+            background: var(--surface-color);
+            backdrop-filter: var(--glass-blur);
+            padding: var(--spacing-xs);
+            border-radius: 100px; /* Pill shape */
+            border: 1px solid var(--border-color);
+        }
+
+        /* --- UI COMPONENTS --- */
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-expo);
+        }
+
+        .icon-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .icon-btn.active {
+            background: var(--text-primary);
+            color: var(--bg-color);
+        }
+
+        .material-symbols-outlined {
+            font-size: 20px;
+        }
+
+        /* --- 3D STAGE --- */
+        .stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-style: preserve-3d;
+            cursor: grab;
+        }
+        .stage:active { cursor: grabbing; }
+
+        .helix-container {
+            position: relative;
+            width: var(--card-width);
+            height: var(--card-height);
+            transform-style: preserve-3d;
+            transition: transform 0.8s var(--ease-out-expo); /* Smoother inertia */
+        }
+
+        /* --- CARDS (The Premium Look) --- */
+        .card {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: #111;
+            border: 1px solid var(--border-color);
+            border-radius: 4px; /* Sharper corners = more professional */
+            overflow: hidden;
+            transform-style: preserve-3d;
+            /* Subtle reflection, not neon glow */
+            -webkit-box-reflect: below 2px linear-gradient(transparent, transparent, rgba(0,0,0,0.2));
+            transition: border-color 0.3s, transform 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--border-highlight);
+            cursor: pointer;
+        }
+
+        .card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.8; /* Slightly dimmed by default */
+            transition: opacity 0.5s, transform 0.5s;
+            filter: grayscale(100%); /* B&W by default for consistency */
+        }
+
+        .card:hover img {
+            opacity: 1;
+            filter: grayscale(0%); /* Color on hover */
+            transform: scale(1.05);
+        }
+
+        /* Minimal overlay text */
+        .card-meta {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s var(--ease-out-expo);
+            pointer-events: none;
+        }
+
+        .card:hover .card-meta {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-meta h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: #fff;
+        }
+        .card-meta p {
+            margin: 4px 0 0 0;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* --- LIGHTBOX (Swiss Modal) --- */
+        .lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.95); /* Deep solid overlay */
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lightbox-content {
+            display: grid;
+            grid-template-columns: 1fr 300px; /* Image | Details */
+            width: 100%;
+            height: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .lb-image-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-lg);
+        }
+
+        .lb-image-container img {
+            max-width: 100%;
+            max-height: 90vh;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .lb-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: var(--spacing-lg);
+            border-left: 1px solid var(--border-color);
+            background: rgba(10,10,10,0.5);
+        }
+
+        .lb-title {
+            font-size: 2rem;
+            font-weight: 300;
+            margin: 0 0 var(--spacing-sm) 0;
+        }
+
+        .lb-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .lb-meta-row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border-color);
+            padding: var(--spacing-sm) 0;
+            font-size: 0.8rem;
+        }
+        
+        .lb-label { color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; }
+
+        .close-btn {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            z-index: 110;
+        }
+
+        /* --- FOOTER --- */
+        .footer-info {
+            position: absolute;
+            bottom: var(--spacing-md);
+            left: var(--spacing-lg);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            pointer-events: none;
+        }
+
+        /* --- MOBILE TWEAKS --- */
+        @media (max-width: 768px) {
+            :root {
+                --card-width: 160px;
+                --card-height: 240px;
+                --helix-radius: 280px;
+                --spacing-lg: 24px;
+            }
+            header { padding: var(--spacing-md); }
+            .lightbox-content { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            .lb-details { border-left: none; border-top: 1px solid var(--border-color); padding: var(--spacing-md); background: #050505; }
+            .lb-image-container { padding: var(--spacing-md); }
+            .lb-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="brand">
+                <span class="material-symbols-outlined brand-logo">deployed_code</span>
+                <span class="brand-name">Coolerogenous</span>
+            </div>
+            
+            <nav class="nav-controls">
+                <button class="icon-btn" onclick="toggleAutoSpin()" id="play-btn" title="Toggle Rotation">
+                    <span class="material-symbols-outlined">pause</span>
+                </button>
+                <button class="icon-btn" onclick="resetView()" title="Reset View">
+                    <span class="material-symbols-outlined">restart_alt</span>
+                </button>
+                <button class="icon-btn" title="Menu">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+            </nav>
+        </header>
+
+        <div class="stage" id="stage">
+            <div class="helix-container" id="helix">
+                </div>
+        </div>
+
+        <div class="footer-info">
+            SCROLL TO ZOOM &bull; DRAG TO ROTATE
+        </div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <button class="close-btn icon-btn" onclick="closeLightbox()">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <div class="lightbox-content">
+            <div class="lb-image-container">
+                <img id="lb-img" src="" alt="">
+            </div>
+            <div class="lb-details">
+                <h2 class="lb-title" id="lb-title">Project Name</h2>
+                <p class="lb-desc" id="lb-desc">Description goes here.</p>
+                
+                <div class="lb-meta-row">
+                    <span class="lb-label">Client</span>
+                    <span id="lb-client">Private</span>
+                </div>
+                <div class="lb-meta-row">
+                    <span class="lb-label">Year</span>
+                    <span>2025</span>
+                </div>
+                <div class="lb-meta-row" style="border-bottom: 1px solid var(--border-color);">
+                    <span class="lb-label">Services</span>
+                    <span id="lb-service">Design</span>
+                </div>
+                
+                <button style="margin-top: 32px; background: white; color: black; border: none; padding: 12px; font-family: inherit; font-weight: 500; cursor: pointer;">
+                    VIEW CASE STUDY
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const portfolio = [
+            { title: "Project Alpha", type: "Blockchain", img: "https://picsum.photos/600/900?random=1", desc: "A decentralized infrastructure solution utilizing Layer 2 scaling." },
+            { title: "Neon Vibes", type: "Visual Identity", img: "https://picsum.photos/600/900?random=2", desc: "Rebranding for a Tokyo-based electronic music festival." },
+            { title: "Abstract AI", type: "Generative Art", img: "https://picsum.photos/600/900?random=3", desc: "Exploration of neural networks in creating non-euclidean geometry." },
+            { title: "Chengdu Life", type: "Photography", img: "https://picsum.photos/600/900?random=4", desc: "Street photography capturing the duality of tradition and modernity." },
+            { title: "Material UI", type: "Interface", img: "https://picsum.photos/600/900?random=5", desc: "A comprehensive design system based on Google's Material 3 guidelines." },
+            { title: "Xianyu Cover", type: "Product", img: "https://picsum.photos/600/900?random=6", desc: "High-conversion product imagery for digital asset marketplaces." },
+            { title: "Douyin Cut", type: "Motion", img: "https://picsum.photos/600/900?random=7", desc: "Short-form abstract video content tailored for algorithmic discovery." },
+            { title: "Node Manager", type: "DevOps", img: "https://picsum.photos/600/900?random=8", desc: "Server management dashboard for VPN node cluster visualization." }
+        ];
+
+        // --- SETUP ---
+        const helix = document.getElementById('helix');
+        const count = portfolio.length;
+        const radius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--helix-radius'));
+
+        // Generate Cards
+        portfolio.forEach((item, i) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => openLightbox(i);
+            
+            // Positioning Logic
+            const theta = i * (360 / count);
+            card.style.transform = `rotateY(${theta}deg) translateZ(${radius}px)`;
+
+            card.innerHTML = `
+                <img src="${item.img}" loading="lazy">
+                <div class="card-meta">
+                    <h3>${item.title}</h3>
+                    <p>${item.type}</p>
+                </div>
+            `;
+            helix.appendChild(card);
+        });
+
+        // --- INTERACTION STATE ---
+        let state = {
+            rotX: -5,
+            rotY: 0,
+            autoSpin: true,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            currRotX: -5,
+            currRotY: 0
+        };
+
+        const speed = 0.15; // Auto spin speed
+        const dragSpeed = 0.2;
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            if (state.autoSpin && !state.isDragging) {
+                state.rotY -= speed;
+            }
+            
+            // Apply transform
+            helix.style.transform = `rotateX(${state.rotX}deg) rotateY(${state.rotY}deg)`;
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- EVENTS ---
+        const stage = document.getElementById('stage');
+
+        // Mouse/Touch Start
+        const onStart = (x, y) => {
+            state.isDragging = true;
+            state.autoSpin = false;
+            updatePlayIcon();
+            state.startX = x;
+            state.startY = y;
+            state.currRotX = state.rotX;
+            state.currRotY = state.rotY;
+        };
+
+        // Mouse/Touch Move
+        const onMove = (x, y) => {
+            if (!state.isDragging) return;
+            const dx = x - state.startX;
+            const dy = y - state.startY;
+            
+            state.rotY = state.currRotY + (dx * dragSpeed);
+            state.rotX = state.currRotX - (dy * dragSpeed);
+
+            // Clamp vertical rotation for elegance
+            state.rotX = Math.max(-30, Math.min(30, state.rotX));
+        };
+
+        // Listeners
+        stage.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+        window.addEventListener('mouseup', () => state.isDragging = false);
+        window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+
+        stage.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchend', () => state.isDragging = false);
+        window.addEventListener('touchmove', e => onMove(e.touches[0].clientX, e.touches[0].clientY));
+
+        // Scroll Zoom (Simple fake zoom via perspective adjustment could go here, omitted for simplicity)
+
+        // --- CONTROLS ---
+        function toggleAutoSpin() {
+            state.autoSpin = !state.autoSpin;
+            updatePlayIcon();
+        }
+
+        function updatePlayIcon() {
+            const btn = document.querySelector('#play-btn span');
+            if(state.autoSpin) {
+                btn.innerText = 'pause';
+                document.getElementById('play-btn').classList.add('active');
+            } else {
+                btn.innerText = 'play_arrow';
+                document.getElementById('play-btn').classList.remove('active');
+            }
+        }
+        
+        // Initialize play button state
+        updatePlayIcon();
+
+        function resetView() {
+            state.rotX = -5;
+            state.rotY = 0;
+            state.autoSpin = true;
+            updatePlayIcon();
+        }
+
+        // --- LIGHTBOX ---
+        const lightbox = document.getElementById('lightbox');
+        
+        function openLightbox(index) {
+            const data = portfolio[index];
+            document.getElementById('lb-img').src = data.img;
+            document.getElementById('lb-title').innerText = data.title;
+            document.getElementById('lb-desc').innerText = data.desc;
+            document.getElementById('lb-service').innerText = data.type;
+            
+            lightbox.classList.add('active');
+            state.autoSpin = false;
+            updatePlayIcon();
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            state.autoSpin = true;
+            updatePlayIcon();
+        }
+
+        // Close on background click
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) closeLightbox();
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Lyric Video Generator</title>
+   <!-- <script src="whammy.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/whammy@0.0.1/whammy.min.js"></script> -->
+    <script>
+    /* Whammy.js Core - 嵌入版 */
+    (function(window){function WhammyVideo(speed,quality){this.frames=[];this.duration=0;this.quality=quality||0.8;this.speed=speed||1.0}WhammyVideo.prototype.add=function(frame,duration){if("canvas"in frame){frame=frame.toDataURL("image/webp",this.quality)}else if("string"!=typeof frame){throw"frame must be a canvas or a data URL string"}this.frames.push({image:frame,duration:duration||(1.0/60.0)})};WhammyVideo.prototype.compile=function(outputAsArray){return new Blob([toWebM(this.frames.map(function(f){return{duration:f.duration,data:f.image.slice(23)}}),outputAsArray)],{type:"video/webm"})};function toWebM(frames,outputAsArray){var info=checkFrames(frames);var CLUSTER_MAX_DURATION=30000;var EBML=[{id:0x1a45dfa3,data:[{data:1,id:0x4286},{data:1,id:0x42f7},{data:4,id:0x42f2},{data:8,id:0x42f3}]},{id:0x18538067,data:[{id:0x1549a966,data:[{data:1e6,id:0x2ad7b1},{data:"whammy",id:0x4d80},{data:"whammy",id:0x5741},{data:double(info.duration),id:0x4489}]},{id:0x1654ae6b,data:[{id:0xae,data:[{data:1,id:0xd7},{data:1,id:0x73c5},{data:0,id:0x9c},{data:0,id:0x22b59c},{id:0xe0,data:[{data:info.width,id:0xb0},{data:info.height,id:0xba}]}]}]}]}];var clusterFrameNumber=0;var clusterTimecode=0;while(clusterFrameNumber<frames.length){var clusterContent={id:0x1f43b675,data:[{data:clusterTimecode,id:0xe7}]};var clusterDuration=0;for(var i=0;i<frames.length;i++){if(clusterFrameNumber>=frames.length)break;var frame=frames[clusterFrameNumber];var data=parseWebP(parseRIFF(atob(frame.data)));if(!data){throw"WebP parsing error"}var block={id:0xa3,data:[{data:clusterFrameNumber+1,id:0x41},{data:Math.round(clusterDuration),id:0x99},{id:0x42,data:[{data:"V_VP8",id:0x86},{data:data,id:0x20002198}]}]};clusterContent.data.push(block);clusterDuration+=frame.duration*1000;clusterFrameNumber++}EBML.push(clusterContent);clusterTimecode+=clusterDuration}return generateEBML(EBML,outputAsArray)}function parseWebP(riff){var VP8=riff.RIFF[0].WEBP[0];var frame_start=VP8.indexOf("\x9d\x01\x2a");var c=VP8.length;for(var i=frame_start+3;i<c;i++){if(VP8[i]=="\x9d"&&VP8[i+1]=="\x01"&&VP8[i+2]=="\x2a"){break}}return VP8.substring(frame_start,i)}function parseRIFF(string){var offset=0;var chunks={};while(offset<string.length){var id=string.substring(offset,offset+4);chunks[id]=chunks[id]||[];if(id=="RIFF"||id=="LIST"){var len=parseInt(string.substring(offset+4,offset+8).split("").map(function(i){var unpadded=i.charCodeAt(0).toString(2);return(new Array(8-unpadded.length+1)).join("0")+unpadded}).join(""),2);var data=string.substring(offset+8,offset+8+len);offset+=8+len;chunks[id].push(parseRIFF(data))}else if(id=="WEBP"){var data=string.substring(offset+8);chunks[id].push(data);offset=string.length}else{var len=parseInt(string.substring(offset+4,offset+8).split("").map(function(i){var unpadded=i.charCodeAt(0).toString(2);return(new Array(8-unpadded.length+1)).join("0")+unpadded}).join(""),2);var data=string.substring(offset+8,offset+8+len);offset+=8+len+len%2;chunks[id].push(data)}}return chunks}function double(num){var buffer=new ArrayBuffer(8);var view=new DataView(buffer);view.setFloat64(0,num,false);return new Uint8Array(buffer)}function generateEBML(json,outputAsArray){var ebml=[];for(var i=0;i<json.length;i++){var data=json[i].data;if(typeof data=="object")data=generateEBML(data,outputAsArray);if(typeof data=="number")data=bitsToBuffer(data.toString(2));if(typeof data=="string")data=strToBuffer(data);var len=data.size||data.byteLength||data.length;var zeros=Math.ceil(Math.ceil(Math.log(len)/Math.log(2))/8);var size_str=len.toString(2);var padded=(new Array((zeros*7+7+1)-size_str.length)).join("0")+size_str;var size=new Uint8Array(zeros);for(var j=0;j<zeros;j++){size[j]=parseInt(padded.substring(j*8,(j+1)*8),2)}size[0]|=1<<(7*zeros);var id=bitsToBuffer(json[i].id.toString(2));ebml.push(id);ebml.push(size);ebml.push(data)}var buffer=new Uint8Array(flatten(ebml));if(outputAsArray){return buffer}else{return new Blob([buffer],{type:"video/webm"})}}function flatten(arr){var flattened=[];for(var i=0;i<arr.length;i++){if(Array.isArray(arr[i])){flattened=flattened.concat(flatten(arr[i]))}else if(arr[i]instanceof Uint8Array){for(var j=0;j<arr[i].length;j++){flattened.push(arr[i][j])}}else{flattened.push(arr[i])}}return flattened}function bitsToBuffer(bits){var data=[];var pad=(bits.length%8)?(new Array(1+8-(bits.length%8))).join("0"):"";bits=pad+bits;for(var i=0;i<bits.length;i+=8){data.push(parseInt(bits.substring(i,i+8),2))}return new Uint8Array(data)}function strToBuffer(str){var data=new Uint8Array(str.length);for(var i=0;i<str.length;i++){data[i]=str.charCodeAt(i)}return data}window.Whammy={Video:WhammyVideo}})(window);
+</script>
+    <style>
+        :root {
+            --ios-blue: #007aff;
+            --ios-red: #ff3b30;
+            --ios-gray: #8e8e93;
+            --ios-bg: #1c1c1e;
+            --ios-panel: #2c2c2e;
+            --ios-border: #3a3a3c;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- 左侧控制面板 (Apple Control Center 风格) --- */
+        .sidebar {
+            width: 360px;
+            background-color: var(--ios-bg);
+            border-right: 1px solid var(--ios-border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        .sidebar::-webkit-scrollbar { width: 0; } /* 隐藏滚动条 */
+
+        h1 { margin: 0; font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h2 { margin: 0 0 12px 0; font-size: 13px; color: var(--ios-gray); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+        .panel-group {
+            background-color: var(--ios-panel);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 输入框样式 */
+        .input-row { display: flex; gap: 10px; align-items: center; }
+        
+        input[type="text"], input[type="number"], input[type="file"] {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus { background: rgba(255,255,255,0.15); box-shadow: 0 0 0 2px var(--ios-blue); }
+        
+        /* 漂亮的 iOS 风格按钮 */
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            color: white;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.5; cursor: wait; }
+
+        .btn-primary { background-color: var(--ios-blue); }
+        .btn-danger { background-color: var(--ios-red); }
+        .btn-secondary { background-color: rgba(255,255,255,0.1); }
+        .btn-secondary:hover { background-color: rgba(255,255,255,0.2); }
+
+        .btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* 进度条样式 */
+        .progress-container { margin-top: auto; display: none; }
+        .progress-bar-bg { background: #333; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+        .progress-bar-fill { background: var(--ios-blue); height: 100%; width: 0%; transition: width 0.1s; }
+        .status-text { font-size: 12px; color: var(--ios-gray); display: flex; justify-content: space-between; }
+
+        /* --- 右侧预览 --- */
+        .preview-area {
+            flex-grow: 1;
+            background: radial-gradient(circle at center, #222, #000);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        canvas {
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            max-width: 80%;
+            max-height: 80vh;
+            border-radius: 4px; /* 稍微一点点圆角 */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>Render Studio</h1>
+
+        <div class="panel-group">
+            <h2>资源导入</h2>
+            <div class="input-row">
+                <input type="file" id="srtInput" accept=".srt" title="导入歌词">
+            </div>
+            <div class="input-row">
+                <input type="file" id="bgInput" accept="image/*" title="导入背景">
+            </div>
+        </div>
+
+        <div class="panel-group">
+            <h2>元数据</h2>
+            <input type="text" id="songTitle" placeholder="歌名 (如: 十二楼)">
+            <input type="text" id="artistName" placeholder="歌手 (如: Sourvill)">
+        </div>
+
+        <div class="panel-group">
+            <h2>输出设置</h2>
+            <div class="input-row">
+                <input type="number" id="vidW" value="1920" placeholder="宽">
+                <span style="color:#666">×</span>
+                <input type="number" id="vidH" value="1080" placeholder="高">
+            </div>
+            <div class="input-row" style="justify-content: space-between; font-size: 12px; color: #aaa;">
+                <span>帧率: 30 FPS</span>
+                <span>格式: WebM</span>
+            </div>
+        </div>
+
+        <div class="btn-grid">
+            <button id="previewBtn" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                播放预览
+            </button>
+            <button id="stopBtn" class="btn btn-secondary" style="display:none">
+                <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                停止
+            </button>
+        </div>
+        
+        <button id="exportBtn" class="btn btn-primary" style="margin-top: 10px;">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            极速导出视频
+        </button>
+
+        <div class="progress-container" id="progressBox">
+            <div class="status-text">
+                <span id="statusLabel">正在渲染...</span>
+                <span id="percentLabel">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-area">
+        <canvas id="mainCanvas"></canvas>
+    </div>
+
+<script>
+    // === 核心逻辑 ===
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 状态管理
+    let state = {
+        lyrics: [],
+        bgImg: null,
+        duration: 0,
+        currentTime: 0,
+        isPlaying: false,
+        isExporting: false,
+        animId: null
+    };
+
+    // DOM 元素
+    const ui = {
+        srt: document.getElementById('srtInput'),
+        bg: document.getElementById('bgInput'),
+        title: document.getElementById('songTitle'),
+        artist: document.getElementById('artistName'),
+        w: document.getElementById('vidW'),
+        h: document.getElementById('vidH'),
+        previewBtn: document.getElementById('previewBtn'),
+        stopBtn: document.getElementById('stopBtn'),
+        exportBtn: document.getElementById('exportBtn'),
+        progBox: document.getElementById('progressBox'),
+        progFill: document.getElementById('progressFill'),
+        statusLabel: document.getElementById('statusLabel'),
+        percentLabel: document.getElementById('percentLabel')
+    };
+
+    // 初始化画布
+    resizeCanvas();
+
+    // === 事件监听 ===
+    ui.w.addEventListener('change', resizeCanvas);
+    ui.h.addEventListener('change', resizeCanvas);
+    ui.title.addEventListener('input', () => drawFrame(state.currentTime));
+    ui.artist.addEventListener('input', () => drawFrame(state.currentTime));
+
+    // 1. 字幕导入
+    ui.srt.addEventListener('change', e => {
+        const f = e.target.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.onload = ev => {
+            state.lyrics = parseSRT(ev.target.result);
+            if(state.lyrics.length) {
+                state.duration = state.lyrics[state.lyrics.length-1].end + 3; // 自动计算时长
+                drawFrame(0);
+                alert(`字幕加载成功，时长: ${state.duration.toFixed(1)}秒`);
+            }
+        };
+        r.readAsText(f);
+    });
+
+    // 2. 背景导入
+    ui.bg.addEventListener('change', e => {
+        const f = e.target.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.onload = ev => {
+            const img = new Image();
+            img.onload = () => { state.bgImg = img; drawFrame(state.currentTime); };
+            img.src = ev.target.result;
+        };
+        r.readAsDataURL(f);
+    });
+
+    // 3. 预览控制
+    ui.previewBtn.addEventListener('click', () => {
+        if(state.isExporting) return;
+        state.isPlaying = true;
+        state.startTime = performance.now(); // 记录开始时间
+        
+        ui.previewBtn.style.display = 'none';
+        ui.stopBtn.style.display = 'flex';
+        
+        loopPreview();
+    });
+
+    ui.stopBtn.addEventListener('click', stopPreview);
+
+    function stopPreview() {
+        state.isPlaying = false;
+        cancelAnimationFrame(state.animId);
+        ui.previewBtn.style.display = 'flex';
+        ui.stopBtn.style.display = 'none';
+    }
+
+    function loopPreview() {
+        if(!state.isPlaying) return;
+        const now = performance.now();
+        const elapsed = (now - state.startTime) / 1000;
+
+        if(elapsed >= state.duration) {
+            stopPreview();
+            return;
+        }
+
+        drawFrame(elapsed);
+        state.animId = requestAnimationFrame(loopPreview);
+    }
+
+    // === 4. 极速导出 (核心功能) ===
+    ui.exportBtn.addEventListener('click', async () => {
+        if(state.lyrics.length === 0) return alert("请先导入 SRT 字幕");
+        if(typeof Whammy === 'undefined') return alert("编码库未加载，请检查网络 (CDN)");
+
+        state.isExporting = true;
+        ui.exportBtn.disabled = true;
+        ui.previewBtn.disabled = true;
+        ui.progBox.style.display = 'block';
+
+        // 初始化编码器
+        const encoder = new Whammy.Video(30); // 30 FPS
+        const fps = 30;
+        const totalFrames = Math.ceil(state.duration * fps);
+        const dt = 1.0 / fps; // 每一帧的时间间隔
+
+        ui.statusLabel.innerText = "正在渲染帧...";
+
+        // 使用 setTimeout 让出主线程，避免界面卡死
+        let currentFrame = 0;
+        
+        const processChunk = () => {
+            // 每次处理 10 帧，然后让出线程更新 UI
+            const chunkEnd = Math.min(currentFrame + 5, totalFrames);
+            
+            for(; currentFrame < chunkEnd; currentFrame++) {
+                const t = currentFrame * dt;
+                drawFrame(t); // 绘制这一刻
+                encoder.add(canvas); // 添加到视频
+            }
+
+            // 更新进度条
+            const pct = Math.round((currentFrame / totalFrames) * 100);
+            ui.progFill.style.width = pct + "%";
+            ui.percentLabel.innerText = pct + "%";
+
+            if(currentFrame < totalFrames) {
+                setTimeout(processChunk, 0); // 继续下一块
+            } else {
+                finishExport(encoder);
+            }
+        };
+
+        // 开始处理
+        setTimeout(processChunk, 10);
+    });
+
+    function finishExport(encoder) {
+        ui.statusLabel.innerText = "正在打包视频...";
+        
+        setTimeout(() => {
+            const output = encoder.compile();
+            const url = URL.createObjectURL(output);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LyricVideo_${Date.now()}.webm`;
+            a.click();
+
+            // 重置 UI
+            state.isExporting = false;
+            ui.exportBtn.disabled = false;
+            ui.previewBtn.disabled = false;
+            ui.statusLabel.innerText = "导出完成!";
+            setTimeout(() => { ui.progBox.style.display = 'none'; }, 2000);
+        }, 100);
+    }
+
+
+    // === 绘图引擎 (Apple UI) ===
+    function resizeCanvas() {
+        canvas.width = parseInt(ui.w.value) || 1920;
+        canvas.height = parseInt(ui.h.value) || 1080;
+        drawFrame(0);
+    }
+
+    function drawFrame(time) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const scale = Math.min(w, h) / 1080; // 自适应缩放系数
+
+        // 1. 绘制背景 (模糊处理)
+        ctx.clearRect(0, 0, w, h);
+        if(state.bgImg) {
+            drawImageCover(ctx, state.bgImg, w, h);
+            // 简单模拟遮罩 (比 filter blur 更快)
+            ctx.fillStyle = "rgba(0,0,0,0.4)"; 
+            ctx.fillRect(0,0,w,h);
+        } else {
+            ctx.fillStyle = "#1c1c1e";
+            ctx.fillRect(0,0,w,h);
+        }
+
+        // 2. 布局坐标
+        const headerY = h * 0.15;
+        const controlsY = h - (h * 0.15);
+        const progressY = controlsY - (120 * scale);
+
+        // 3. 头部文字
+        ctx.textAlign = 'center';
+        // 歌名
+        ctx.fillStyle = "#fff";
+        ctx.font = `700 ${54 * scale}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 10;
+        ctx.fillText(ui.title.value, w/2, headerY);
+        // 歌手
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.font = `400 ${32 * scale}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.shadowBlur = 0;
+        ctx.fillText(ui.artist.value, w/2, headerY + (60 * scale));
+
+        // 4. 歌词 (核心)
+        const lyricY = (headerY + progressY) / 2;
+        const activeLine = state.lyrics.find(l => time >= l.start && time <= l.end);
+        
+        if(activeLine) {
+            const lines = activeLine.text.split('\n');
+            const fontSize = 80 * scale;
+            const lineHeight = fontSize * 1.3;
+            const startY = lyricY - ((lines.length-1)*lineHeight)/2;
+            
+            ctx.font = `700 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 15;
+            
+            lines.forEach((txt, i) => {
+                ctx.fillText(txt, w/2, startY + i*lineHeight);
+            });
+        }
+
+        // 5. 播放器控件 UI
+        const barW = w * 0.8;
+        const barH = 8 * scale;
+        const barX = (w - barW)/2;
+
+        // 进度条背景
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.shadowBlur = 0;
+        roundRect(ctx, barX, progressY, barW, barH, barH/2);
+        ctx.fill();
+
+        // 进度条前景
+        const pct = Math.min(time / (state.duration || 1), 1);
+        ctx.fillStyle = "#fff";
+        roundRect(ctx, barX, progressY, barW * pct, barH, barH/2);
+        ctx.fill();
+
+        // 进度滑块 (Thumb)
+        ctx.beginPath();
+        ctx.arc(barX + barW*pct, progressY + barH/2, barH*2, 0, Math.PI*2);
+        ctx.fill();
+
+        // 时间
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.font = `400 ${24 * scale}px monospace`;
+        ctx.textAlign = "right";
+        ctx.fillText(formatTime(time), barX - 15, progressY + barH);
+        ctx.textAlign = "left";
+        const remain = Math.max(0, state.duration - time);
+        ctx.fillText("-" + formatTime(remain), barX + barW + 15, progressY + barH);
+
+        // 按钮组 (SVG Paths)
+        const iconScale = scale * 2.5;
+        const centerY = controlsY;
+        
+        // 暂停/播放图标 (如果是导出中，画暂停状态以示“播放中”)
+        // 中间 (Play/Pause)
+        drawSvgIcon(ctx, "M8 5v14l11-7z", w/2, centerY, iconScale, "#fff"); // 这里画播放图标做装饰，或者画暂停
+        // 如果想要更像播放器，导出时通常是“暂停图标”表示正在播放
+        // 这里为了好看，画一个标准的暂停图标
+        ctx.fillStyle = "#fff";
+        const pauseW = 10 * scale; const pauseH = 50 * scale;
+        ctx.fillRect(w/2 - pauseW*2, centerY - pauseH/2, pauseW, pauseH);
+        ctx.fillRect(w/2 + pauseW, centerY - pauseH/2, pauseW, pauseH);
+
+        // 左右按钮 (Prev/Next)
+        const offset = 180 * scale;
+        drawSvgIcon(ctx, "M6 6h2v12H6zm3.5 6l8.5 6V6z", w/2 - offset, centerY, iconScale * 0.8, "#fff"); // Prev
+        drawSvgIcon(ctx, "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z", w/2 + offset, centerY, iconScale * 0.8, "#fff"); // Next
+    }
+
+    // === 工具函数 ===
+    
+    // 绘制 SVG Path
+    function drawSvgIcon(ctx, path, x, y, scale, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.translate(-12, -12); // Center 24x24 icon
+        const p = new Path2D(path);
+        ctx.fillStyle = color;
+        ctx.fill(p);
+        ctx.restore();
+    }
+
+    // 图片 Cover 模式绘制
+    function drawImageCover(ctx, img, w, h) {
+        const iRatio = img.width / img.height;
+        const cRatio = w / h;
+        let dw, dh, dx, dy;
+        if (cRatio > iRatio) { dw = w; dh = w / iRatio; dx = 0; dy = (h - dh)/2; } 
+        else { dh = h; dw = h * iRatio; dy = 0; dx = (w - dw)/2; }
+        ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
+    // 圆角矩形 Polyfill
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.arcTo(x+w, y, x+w, y+h, r);
+        ctx.arcTo(x+w, y+h, x, y+h, r);
+        ctx.arcTo(x, y+h, x, y, r);
+        ctx.arcTo(x, y, x+w, y, r);
+        ctx.closePath();
+    }
+
+    // SRT 解析
+    function parseSRT(data) {
+        return data.replace(/\r\n/g,'\n').split('\n\n').map(b => {
+            const lines = b.split('\n');
+            if(lines.length < 2) return null;
+            const tIdx = lines.findIndex(l => l.includes('-->'));
+            if(tIdx === -1) return null;
+            const [s, e] = lines[tIdx].split(' --> ');
+            return {
+                start: timeToSec(s),
+                end: timeToSec(e),
+                text: lines.slice(tIdx+1).join('\n')
+            };
+        }).filter(x => x);
+    }
+
+    function timeToSec(t) {
+        const [h,m,s] = t.split(':');
+        const [sec,ms] = s.split(',');
+        return parseInt(h)*3600 + parseInt(m)*60 + parseInt(sec) + parseInt(ms)/1000;
+    }
+
+    function formatTime(s) {
+        if(isNaN(s)) return "0:00";
+        const m = Math.floor(s/60);
+        const sec = Math.floor(s%60);
+        return `${m}:${sec.toString().padStart(2,'0')}`;
+    }
+</script>
+
+</body>
+</html>
