@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闲鱼封面生成器 - 多风格版</title>
+    <style>
+        :root {
+            --xy-yellow: #FFDA00;
+            --xy-black: #111111;
+            --bg-color: #f6f6f6;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 320px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--xy-yellow);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .style-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .style-btn {
+            padding: 10px;
+            border: 2px solid #eee;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            color: #555;
+        }
+
+        .style-btn:hover {
+            border-color: #ccc;
+        }
+
+        .style-btn.active {
+            border-color: var(--xy-black);
+            background-color: var(--xy-black);
+            color: white;
+        }
+
+        .btn-download {
+            margin-top: 20px;
+            background-color: var(--xy-black);
+            color: var(--xy-yellow);
+            border: none;
+            padding: 14px 24px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 900;
+            transition: 0.2s;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-download:active {
+            transform: translateY(0);
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0.2);
+        }
+
+        canvas {
+            width: 400px;
+            height: 400px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>⚡ 闲鱼封面生成器 ⚡</h1>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <label>选择风格 (Style)</label>
+                <div class="style-selector">
+                    <button class="style-btn active" onclick="setStyle('xianyu')">🟡 闲鱼黄</button>
+                    <button class="style-btn" onclick="setStyle('simple')">⚪ 极简白</button>
+                    <button class="style-btn" onclick="setStyle('tech')">🔵 科技蓝</button>
+                    <button class="style-btn" onclick="setStyle('orange')">🟠 活力橙</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>商品名称 (Main Title)</label>
+                <textarea id="mainTitle" rows="3">全新未拆封 iPad Pro 2024款 M4芯片</textarea>
+                <small style="color:#999; margin-top:4px;">自动换行，字数越多字体越小</small>
+            </div>
+
+            <div class="input-group">
+                <label>卖点 / 价格标签 (Price Tag)</label>
+                <input type="text" id="priceTag" value="急出 ¥5800">
+            </div>
+
+            <div class="input-group">
+                <label>底部文案 (Footer Text)</label>
+                <input type="text" id="footerText" value="仅面交 | 信用极好 | 顺丰包邮">
+            </div>
+
+            <div class="input-group">
+                <label>店铺/用户名称 (User)</label>
+                <input type="text" id="userName" value="我是学生送我">
+            </div>
+
+            <button class="btn-download" onclick="downloadImage()">保存封面图</button>
+        </div>
+
+        <canvas id="canvas" width="800" height="800"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let config = {
+            style: 'xianyu', // xianyu, simple, tech, orange
+            mainTitle: '',
+            priceTag: '',
+            footerText: '',
+            userName: ''
+        };
+
+        const inputs = {
+            mainTitle: document.getElementById('mainTitle'),
+            priceTag: document.getElementById('priceTag'),
+            footerText: document.getElementById('footerText'),
+            userName: document.getElementById('userName')
+        };
+
+        function setStyle(styleName) {
+            config.style = styleName;
+
+            // Update UI
+            document.querySelectorAll('.style-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            updateCanvas();
+        }
+
+        function init() {
+            Object.keys(inputs).forEach(key => {
+                inputs[key].addEventListener('input', updateCanvas);
+            });
+            updateCanvas();
+        }
+
+        function updateCanvas() {
+            // Update config
+            config.mainTitle = inputs.mainTitle.value;
+            config.priceTag = inputs.priceTag.value;
+            config.footerText = inputs.footerText.value;
+            config.userName = inputs.userName.value;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, 800, 800);
+
+            // Dispatch based on style
+            switch (config.style) {
+                case 'simple': drawSimpleStyle(); break;
+                case 'tech': drawTechStyle(); break;
+                case 'orange': drawOrangeStyle(); break;
+                default: drawXianyuStyle(); break;
+            }
+        }
+
+        // --- Style Implementations ---
+
+        function drawXianyuStyle() {
+            // Background
+            ctx.fillStyle = '#FFDA00';
+            ctx.fillRect(0, 0, 800, 800);
+
+            // Title
+            drawMainTitle(config.mainTitle, '#000000', 'left');
+
+            // Tag (Red Sticker)
+            drawPriceTag(config.priceTag, '#FF2442', '#FFFFFF', -5);
+
+            // Footer
+            drawFooter(config.footerText, config.userName, '#000000');
+        }
+
+        function drawSimpleStyle() {
+            // Background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            // Border
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 20;
+            ctx.strokeRect(0, 0, 800, 800);
+
+            // Title
+            drawMainTitle(config.mainTitle, '#000000', 'center');
+
+            // Tag (Clean Black Box)
+            drawPriceTag(config.priceTag, '#000000', '#FFFFFF', 0, false);
+
+            // Footer
+            drawFooter(config.footerText, config.userName, '#333333');
+        }
+
+        function drawTechStyle() {
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 800, 800);
+            grad.addColorStop(0, '#0f0c29');
+            grad.addColorStop(0.5, '#302b63');
+            grad.addColorStop(1, '#24243e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 800);
+
+            // Decorative Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 800; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 800); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(800, i); ctx.stroke();
+            }
+
+            // Title (White with Cyan Glow)
+            ctx.shadowColor = '#00f260';
+            ctx.shadowBlur = 20;
+            drawMainTitle(config.mainTitle, '#FFFFFF', 'left');
+            ctx.shadowBlur = 0; // Reset
+
+            // Tag (Neon Box)
+            drawPriceTag(config.priceTag, '#0575E6', '#FFFFFF', 0, true);
+
+            // Footer
+            drawFooter(config.footerText, config.userName, '#AAAAAA');
+        }
+
+        function drawOrangeStyle() {
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 0, 800);
+            grad.addColorStop(0, '#FF416C');
+            grad.addColorStop(1, '#FF4B2B');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 800, 800);
+
+            // Title
+            drawMainTitle(config.mainTitle, '#FFFFFF', 'center');
+
+            // Tag (White Box, Orange Text)
+            drawPriceTag(config.priceTag, '#FFFFFF', '#FF4B2B', -3, false);
+
+            // Footer
+            drawFooter(config.footerText, config.userName, '#FFFFFF');
+        }
+
+        // --- Shared Helpers ---
+
+        function drawMainTitle(text, color, align) {
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'top';
+
+            let x = 50;
+            if (align === 'center') x = 400;
+
+            const y = 80;
+            const maxWidth = 700;
+            const maxHeight = 400;
+
+            let fontSize = 120;
+            let lines = [];
+            let lineHeight = fontSize * 1.2;
+
+            while (fontSize > 40) {
+                ctx.font = `900 ${fontSize}px "Microsoft YaHei", sans-serif`;
+                lines = getLines(ctx, text, maxWidth);
+                lineHeight = fontSize * 1.2;
+                const totalHeight = lines.length * lineHeight;
+                if (totalHeight <= maxHeight) break;
+                fontSize -= 5;
+            }
+
+            lines.forEach((line, index) => {
+                ctx.fillText(line, x, y + (index * lineHeight));
+            });
+        }
+
+        function drawPriceTag(text, bgColor, textColor, rotateDeg, isNeon = false) {
+            if (!text) return;
+
+            ctx.save();
+            ctx.translate(600, 500);
+            ctx.rotate(rotateDeg * Math.PI / 180);
+
+            ctx.fillStyle = bgColor;
+            if (isNeon) {
+                ctx.shadowColor = bgColor;
+                ctx.shadowBlur = 20;
+            } else {
+                ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetX = 5;
+                ctx.shadowOffsetY = 5;
+            }
+
+            const paddingX = 40;
+            const paddingY = 20;
+            ctx.font = 'bold 60px "Microsoft YaHei", sans-serif';
+            const textMetrics = ctx.measureText(text);
+            const w = textMetrics.width + paddingX * 2;
+            const h = 80 + paddingY * 2;
+
+            roundRect(ctx, -w / 2, -h / 2, w, h, 20);
+            ctx.fill();
+
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 0, 5);
+
+            ctx.restore();
+        }
+
+        function drawFooter(footerText, name, color) {
+            // Footer separator
+            ctx.beginPath();
+            ctx.moveTo(40, 650);
+            ctx.lineTo(760, 650);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Footer Text
+            ctx.fillStyle = color;
+            ctx.font = 'bold 30px "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(footerText, 50, 690);
+
+            // User Info
+            ctx.fillStyle = color; // Fix: Use updated color
+            ctx.font = '24px "Microsoft YaHei", sans-serif';
+            ctx.fillText(name, 50, 740);
+        }
+
+        function getLines(ctx, text, maxWidth) {
+            const lines = [];
+            const paragraphs = text.split('\n');
+
+            for (let para of paragraphs) {
+                const chars = para.split('');
+                let currentLine = '';
+
+                for (let i = 0; i < chars.length; i++) {
+                    const char = chars[i];
+                    const testLine = currentLine + char;
+                    const metrics = ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+
+                    if (testWidth > maxWidth && i > 0) {
+                        lines.push(currentLine);
+                        currentLine = char;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                lines.push(currentLine);
+            }
+            return lines;
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `cover_${config.style}_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
