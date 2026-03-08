@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闲鱼封面生成器 V2 - 支持截图</title>
+    <style>
+        :root {
+            --g-blue: #4285F4;
+            --bg-color: #f8f9fa;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        
+        .container {
+            display: flex;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 300px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            background: #fcfcfc;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* 文件上传样式优化 */
+        input[type="file"] {
+            font-size: 12px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+        }
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .color-btn.active { border-color: #333; transform: scale(1.1); }
+
+        canvas {
+            width: 400px;
+            height: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            background-image: linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee), linear-gradient(45deg, #eee 25%, transparent 25%, transparent 75%, #eee 75%, #eee);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        .btn-download {
+            margin-top: 10px;
+            background-color: var(--g-blue);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-download:hover { opacity: 0.9; }
+        
+        .tip { font-size: 12px; color: #999; margin-top: -10px; }
+
+    </style>
+</head>
+<body>
+
+    <h1>闲鱼封面 V2 (截图版)</h1>
+
+    <div class="container">
+        <div class="controls">
+            
+            <div class="input-group">
+                <label>1. 选择主题色</label>
+                <div class="color-picker">
+                    <div class="color-btn active" style="background: #4285F4;" onclick="setColor('#4285F4', this)"></div>
+                    <div class="color-btn" style="background: #EA4335;" onclick="setColor('#EA4335', this)"></div>
+                    <div class="color-btn" style="background: #FBBC05;" onclick="setColor('#FBBC05', this)"></div>
+                    <div class="color-btn" style="background: #34A853;" onclick="setColor('#34A853', this)"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>2. 上传产品截图</label>
+                <input type="file" id="imgUpload" accept="image/*">
+                <label style="margin-top:10px;">截图缩放 (Zoom)</label>
+                <input type="range" id="imgScale" min="0.5" max="3" step="0.1" value="1">
+                <label style="margin-top:10px;">上下位置 (Y轴)</label>
+                <input type="range" id="imgOffsetY" min="-200" max="200" step="10" value="0">
+            </div>
+
+            <div class="input-group">
+                <label>3. 文字内容</label>
+                <input type="text" id="mainTitle" value="Gmail 老号" placeholder="主标题">
+                <input type="text" id="subTitle" value="2018年注册 | 美国IP" placeholder="副标题" style="margin-top:5px;">
+                <input type="text" id="tagText" value="稳定不封号" placeholder="标签" style="margin-top:5px;">
+            </div>
+
+            <div class="input-group">
+                <label>4. 店铺水印</label>
+                <input type="text" id="shopName" value="@您的店铺名">
+            </div>
+            
+            <button class="btn-download" onclick="downloadImage()">保存封面</button>
+        </div>
+
+        <canvas id="canvas" width="800" height="800"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let config = {
+            color: '#4285F4',
+            image: null,
+            scale: 1,
+            offsetY: 0,
+            mainTitle: '',
+            subTitle: '',
+            tagText: '',
+            shopName: ''
+        };
+
+        // 初始化
+        function init() {
+            // 绑定所有输入框事件
+            document.querySelectorAll('input[type="text"]').forEach(el => {
+                el.addEventListener('input', updateCanvas);
+            });
+            
+            // 图片上传
+            document.getElementById('imgUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if(file){
+                    const reader = new FileReader();
+                    reader.onload = function(event){
+                        const img = new Image();
+                        img.onload = function(){
+                            config.image = img;
+                            updateCanvas();
+                        }
+                        img.src = event.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 滑块
+            document.getElementById('imgScale').addEventListener('input', (e) => {
+                config.scale = parseFloat(e.target.value);
+                updateCanvas();
+            });
+            document.getElementById('imgOffsetY').addEventListener('input', (e) => {
+                config.offsetY = parseInt(e.target.value);
+                updateCanvas();
+            });
+
+            updateCanvas();
+        }
+
+        function setColor(color, btn) {
+            config.color = color;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            updateCanvas();
+        }
+
+        function updateCanvas() {
+            // 获取最新文字
+            config.mainTitle = document.getElementById('mainTitle').value;
+            config.subTitle = document.getElementById('subTitle').value;
+            config.tagText = document.getElementById('tagText').value;
+            config.shopName = document.getElementById('shopName').value;
+
+            // 1. 背景
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            // 2. 顶部彩条
+            const barH = 20;
+            ctx.fillStyle = '#4285F4'; ctx.fillRect(0,0,200,barH);
+            ctx.fillStyle = '#EA4335'; ctx.fillRect(200,0,200,barH);
+            ctx.fillStyle = '#FBBC05'; ctx.fillRect(400,0,200,barH);
+            ctx.fillStyle = '#34A853'; ctx.fillRect(600,0,200,barH);
+
+            // 3. 文字标题区域
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#202124';
+            ctx.font = 'bold 70px "Microsoft YaHei"';
+            ctx.fillText(config.mainTitle, 400, 120);
+
+            ctx.fillStyle = config.color;
+            ctx.font = 'bold 36px "Microsoft YaHei"';
+            ctx.fillText(config.subTitle, 400, 180);
+
+            // 4. 图片容器绘制 (核心逻辑)
+            // 定义窗口区域
+            const winX = 100, winY = 220, winW = 600, winH = 400;
+            
+            // 绘制窗口阴影
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.2)";
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 10;
+            ctx.fillStyle = "#fff";
+            roundRect(ctx, winX, winY, winW, winH, 20);
+            ctx.fill();
+            ctx.restore();
+
+            // 绘制窗口内部 (裁剪图片)
+            ctx.save();
+            roundRect(ctx, winX, winY, winW, winH, 20);
+            ctx.clip(); // 裁剪区域
+
+            // 绘制图片
+            if (config.image) {
+                const imgW = config.image.width * config.scale;
+                const imgH = config.image.height * config.scale;
+                // 默认居中
+                const dx = winX + (winW - imgW)/2;
+                const dy = winY + (winH - imgH)/2 + config.offsetY;
+                ctx.drawImage(config.image, dx, dy, imgW, imgH);
+            } else {
+                // 没有图片时的占位符
+                ctx.fillStyle = '#f1f3f4';
+                ctx.fillRect(winX, winY, winW, winH);
+                ctx.fillStyle = '#ccc';
+                ctx.font = '30px Arial';
+                ctx.fillText("请上传截图", 400, 420);
+            }
+            ctx.restore();
+
+            // 绘制窗口顶栏 (模拟浏览器效果)
+            ctx.fillStyle = '#e8eaed'; // 顶栏背景灰
+            // 只绘制顶部的圆角矩形部分，这里用简单的矩形覆盖顶部
+            ctx.beginPath();
+            ctx.moveTo(winX, winY+40);
+            ctx.lineTo(winX+winW, winY+40);
+            ctx.lineTo(winX+winW, winY+20); // 稍微简化，直接覆盖顶部
+            ctx.quadraticCurveTo(winX+winW, winY, winX+winW-20, winY);
+            ctx.lineTo(winX+20, winY);
+            ctx.quadraticCurveTo(winX, winY, winX, winY+20);
+            ctx.fill();
+
+            // 绘制三个点
+            ctx.fillStyle = '#ff5f57'; ctx.beginPath(); ctx.arc(winX+30, winY+20, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffbd2e'; ctx.beginPath(); ctx.arc(winX+55, winY+20, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#28c940'; ctx.beginPath(); ctx.arc(winX+80, winY+20, 6, 0, Math.PI*2); ctx.fill();
+            
+            // 绘制边框
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            roundRect(ctx, winX, winY, winW, winH, 20);
+            ctx.stroke();
+
+            // 5. 底部标签
+            // 胶囊背景
+            ctx.fillStyle = config.color;
+            roundRect(ctx, 250, 660, 300, 60, 30);
+            ctx.fill();
+            // 文字
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 30px "Microsoft YaHei"';
+            ctx.fillText(config.tagText, 400, 702);
+
+            // 6. 底部水印
+            ctx.fillStyle = '#aaa';
+            ctx.font = '24px "Microsoft YaHei"';
+            ctx.fillText(config.shopName, 400, 760);
+        }
+
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            const title = document.getElementById('mainTitle').value || 'cover';
+            link.download = `闲鱼封面_${title}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>

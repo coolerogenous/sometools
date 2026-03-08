@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞书个人版注册封面</title>
+    <style>
+        :root {
+            --primary-blue: #007BFF;
+            --light-blue: #E7F1FF;
+            --text-dark: #333;
+            --success-green: #28a745;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        /* 闲鱼建议尺寸通常为 1:1 或 3:4 */
+        .cover-card {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            padding: 40px;
+            box-sizing: border-box;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部 Logo 与 标题区 */
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-box {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .logo-box img {
+            width: 60px;
+            height: 60px;
+        }
+
+        .title-group h1 {
+            font-size: 32px;
+            margin: 0;
+            color: var(--text-dark);
+            letter-spacing: 1px;
+        }
+
+        .capacity-badge {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            background: var(--light-blue);
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        /* 核心卖点列表 */
+        .features {
+            margin-top: 20px;
+            flex-grow: 1;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 20px;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .check-icon {
+            width: 28px;
+            height: 28px;
+            background-color: var(--success-green);
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .check-icon::after {
+            content: '';
+            width: 12px;
+            height: 6px;
+            border-left: 3px solid white;
+            border-bottom: 3px solid white;
+            transform: rotate(-45deg);
+            margin-bottom: 3px;
+        }
+
+        /* 底部装饰或强调 */
+        .footer-tag {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--primary-blue);
+            color: white;
+            padding: 10px 30px;
+            border-top-left-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* 装饰背景圆圈 */
+        .cover-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 123, 255, 0.05);
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cover-card">
+        <div class="header">
+            <div class="logo-box">
+                <img src="https://img.icons8.com/color/96/lark.png" alt="飞书Logo">
+            </div>
+            <div class="title-group">
+                <h1>飞书个人版注册</h1>
+                <div class="capacity-badge">100GB 容量</div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-item">
+                <div class="check-icon"></div>
+                <span>官方渠道注册 · 先到先得</span>
+            </div>
+            <div class="feature-item">
+                <div class="check-icon"></div>
+                <span>无需解散企业 · 无需注销账号</span>
+            </div>
+            <div class="feature-item">
+                <div class="check-icon"></div>
+                <span>拍下客服协助注册 · 长期使用</span>
+            </div>
+        </div>
+
+        <div class="footer-tag">正版授权 · 安全稳定</div>
+    </div>
+
+</body>
+</html>
