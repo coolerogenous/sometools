@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter 账号销售封面生成器 - iOS 18 UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            /* === Light Mode Variables (遵循 iOS 系统动态色彩) === */
+            --bg-color: #f2f2f7; /* System Grouped Background 6 */
+            --content-color: #ffffff; /* System Background 1 */
+            --separator-color: #c6c6c8; /* System Gray 4 */
+            --tint-color: #007aff; /* System Blue */
+            --text-color: #000000;
+            --text-color-secondary: #8e8e93; /* System Gray */
+            --text-color-placeholder: #aeaeae;
+            --nav-bg: rgba(255, 255, 255, 0.6);
+            --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.08); /*微妙阴影*/
+            --card-radius: 16px; /*卡片元素 16px 圆角*/
+            --control-radius: 12px; /*应用控件 12px 统一圆角*/
+            --nav-blur: 10px; /*毛玻璃 blur 效果*/
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* === Dark Mode Variables === */
+                --bg-color: #1c1c1e; /* System Grouped Background 6 Dark */
+                --content-color: #2c2c2e; /* System Background 1 Dark */
+                --separator-color: #3e3e40; /* System Gray 4 Dark */
+                --tint-color: #35a8ff; /* System Blue Dark */
+                --text-color: #ffffff;
+                --text-color-secondary: #aeaeb2; /* System Gray Dark */
+                --text-color-placeholder: #5c5c5f;
+                --nav-bg: rgba(28, 28, 30, 0.6);
+                --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            /* 使用系统字体族，模拟 SF Pro */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.4;
+            font-size: 16px; /* Body Regular */
+        }
+
+        /* === 排版系统 === */
+        h1.title {
+            font-size: 24px;
+            font-weight: 700; /* 标题 24pt / 粗体 */
+        }
+        h2.subtitle {
+            font-size: 18px;
+            font-weight: 600; /* 副标题 18pt / 中等 */
+        }
+        p.body {
+            font-size: 16px;
+            font-weight: 400; /* 正文 16pt / 常规 */
+        }
+        p.subtext {
+            font-size: 14px;
+            font-weight: 300; /* 辅助文字 14pt / 轻量 */
+        }
+
+        .ios-app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* === 毛玻璃导航栏 === */
+        .ios-navigation-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background-color: var(--nav-bg);
+            -webkit-backdrop-filter: blur(var(--nav-blur));
+            backdrop-filter: blur(var(--nav-blur));
+            border-bottom: 0.5px solid var(--separator-color);
+            display: flex;
+            align-items: flex-end;
+            padding: 0 20px 10px 20px;
+            z-index: 100;
+        }
+
+        .ios-navigation-bar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .ios-app-container {
+            margin-top: 100px; /* 导航栏高度 */
+            padding: 20px;
+            display: flex;
+            flex-grow: 1;
+            gap: 20px;
+        }
+
+        /* === 左侧：工具栏 === */
+        .tool-panel {
+            width: 320px;
+            background-color: var(--content-color);
+            border-radius: var(--card-radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: fit-content;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 14px;
+            color: var(--text-color-secondary);
+        }
+
+        input {
+            background-color: var(--bg-color);
+            border: none;
+            border-radius: var(--control-radius);
+            padding: 12px 15px;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            outline: 2px solid var(--tint-color);
+        }
+
+        input::placeholder {
+            color: var(--text-color-placeholder);
+        }
+
+        .button-group {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* iOS 风格按钮 */
+        .btn {
+            border: none;
+            border-radius: var(--control-radius);
+            padding: 14px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+            opacity: 0.8;
+        }
+
+        .btn-primary {
+            background-color: var(--tint-color);
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-color);
+            color: var(--tint-color);
+        }
+
+        /* === 右侧：预览区 === */
+        .preview-panel {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* 这是将要被生成的卡片 DOM 区域 */
+        #generated-cover {
+            width: 500px;
+            height: 500px;
+            background-color: var(--content-color);
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-subtle);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 0.5px solid var(--separator-color);
+        }
+
+        /* === 生成的封面卡片布局 (基于论坛帖子规范) === */
+        .forum-post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background-color: #ddd;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .user-avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: #fff;
+            background-color: var(--tint-color);
+            font-weight: 600;
+        }
+
+        .user-meta {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .post-info {
+            font-size: 14px;
+            color: var(--text-color-secondary);
+        }
+
+        .kpi-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background-color: var(--bg-color);
+            border-radius: var(--card-radius);
+            padding: 15px;
+            text-align: center;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--tint-color);
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: var(--text-color-secondary);
+        }
+
+        .detail-list {
+            list-style: none;
+            background-color: var(--bg-color);
+            border-radius: var(--card-radius);
+            padding: 5px 0;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .detail-item-title {
+            color: var(--text-color-secondary);
+        }
+
+        .detail-item-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .separator {
+            height: 0.5px;
+            background-color: var(--separator-color);
+            margin: 0 15px;
+        }
+
+        .account-status {
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .status-active {
+            background-color: #e3f9eb;
+            color: #2b7a4b;
+        }
+        @media (prefers-color-scheme: dark) {
+            .status-active {
+                background-color: #1e3a2c;
+                color: #55cf8e;
+            }
+        }
+
+        .post-footer {
+            margin-top: auto;
+            text-align: center;
+        }
+
+        .disclaimer {
+            font-size: 12px;
+            color: var(--text-color-secondary);
+        }
+
+        /* SF Symbols approximation via Unicode */
+        .icon-plus { font-size: 18px; color: var(--tint-color); font-weight: 600; }
+        .icon-download { font-size: 18px; }
+        .icon-status { font-size: 12px; }
+
+    </style>
+</head>
+<body class="ios-light">
+    <div class="ios-app">
+        <header class="ios-navigation-bar">
+            <div class="ios-navigation-bar-content">
+                <h1 class="title">社区账号市集</h1>
+                <div style="display: flex; gap: 15px;">
+                    <span style="font-size: 20px;">&#128269;</span>
+                    <span class="icon-plus">&#10133;</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="ios-app-container">
+            <aside class="tool-panel">
+                <h2 class="subtitle">创建封面</h2>
+                <div class="form-group">
+                    <label for="twitterUsername">Twitter 用户名</label>
+                    <input type="text" id="twitterUsername" placeholder="@johndoe">
+                </div>
+                <div class="form-group">
+                    <label for="followerCount">粉丝数 (例如: 10K, 1,234)</label>
+                    <input type="text" id="followerCount" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="tweetCount">推文数</label>
+                    <input type="text" id="tweetCount" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="registerDate">注册时间 (例如: 2021-05)</label>
+                    <input type="text" id="registerDate" placeholder="YYYY-MM">
+                </div>
+                <div class="form-group">
+                    <label for="profileLink">推特主页链接 (可选)</label>
+                    <input type="text" id="profileLink" placeholder="twitter.com/johndoe">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-secondary" id="resetBtn">重置输入</button>
+                    <button class="btn btn-primary" id="downloadBtn">
+                        <span class="icon-download">&#128229;</span>
+                        一键下载封面
+                    </button>
+                </div>
+            </aside>
+
+            <main class="preview-panel">
+                <div id="generated-cover">
+                    <div class="forum-post-header">
+                        <div class="user-avatar">
+                            <div class="user-avatar-placeholder" id="avatarPlaceholder">JD</div>
+                        </div>
+                        <div class="user-meta">
+                            <span class="user-name">专业账号卖家</span>
+                            <span class="post-info">刚才 发布于 账号转让板块</span>
+                        </div>
+                    </div>
+
+                    <h1 class="title" style="margin-bottom: 20px;">优质 Twitter 账号出售</h1>
+
+                    <div class="kpi-container">
+                        <div class="kpi-card">
+                            <span class="kpi-value" id="previewFollowers">0</span>
+                            <br>
+                            <span class="kpi-label">粉丝</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-value" id="previewTweets">0</span>
+                            <br>
+                            <span class="kpi-label">推文</span>
+                        </div>
+                    </div>
+
+                    <ul class="detail-list">
+                        <li class="detail-item">
+                            <span class="detail-item-title">用户名</span>
+                            <span class="detail-item-value" id="previewUsername">@johndoe</span>
+                        </li>
+                        <li class="separator"></li>
+                        <li class="detail-item">
+                            <span class="detail-item-title">注册时间</span>
+                            <span class="detail-item-value" id="previewDate">2021-05</span>
+                        </li>
+                        <li class="separator"></li>
+                        <li class="detail-item">
+                            <span class="detail-item-title">账号状态</span>
+                            <span class="account-status status-active">
+                                <span class="icon-status">&#10004;</span>
+                                状态良好
+                            </span>
+                        </li>
+                        <li class="separator"></li>
+                        <li class="detail-item">
+                            <span class="detail-item-title">主页链接</span>
+                            <span class="detail-item-value" style="color: var(--tint-color);" id="previewLink">twitter.com/...</span>
+                        </li>
+                    </ul>
+
+                    <footer class="post-footer">
+                        <p class="disclaimer">生成的封面符合 iOS 18 高质量论坛设计规范。</p>
+                        <p class="disclaimer">交易前请仔细核实账号信息。</p>
+                    </footer>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // 获取所有输入框和预览元素
+        const twitterUsernameInput = document.getElementById('twitterUsername');
+        const followerCountInput = document.getElementById('followerCount');
+        const tweetCountInput = document.getElementById('tweetCount');
+        const registerDateInput = document.getElementById('registerDate');
+        const profileLinkInput = document.getElementById('profileLink');
+
+        const previewUsername = document.getElementById('previewUsername');
+        const previewFollowers = document.getElementById('previewFollowers');
+        const previewTweets = document.getElementById('previewTweets');
+        const previewDate = document.getElementById('previewDate');
+        const previewLink = document.getElementById('previewLink');
+        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+
+        // 获取按钮
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // 生成器函数：更新预览
+        function updatePreview() {
+            previewUsername.textContent = twitterUsernameInput.value || '@johndoe';
+            previewFollowers.textContent = followerCountInput.value || '0';
+            previewTweets.textContent = tweetCountInput.value || '0';
+            previewDate.textContent = registerDateInput.value || '2021-05';
+            previewLink.textContent = profileLinkInput.value || 'twitter.com/johndoe';
+
+            // 更新头像占位符
+            const username = twitterUsernameInput.value || 'johndoe';
+            const initials = username.substring(0, 2).toUpperCase();
+            avatarPlaceholder.textContent = initials;
+        }
+
+        // 添加输入监听器，实时更新预览
+        twitterUsernameInput.addEventListener('input', updatePreview);
+        followerCountInput.addEventListener('input', updatePreview);
+        tweetCountInput.addEventListener('input', updatePreview);
+        registerDateInput.addEventListener('input', updatePreview);
+        profileLinkInput.addEventListener('input', updatePreview);
+
+        // 初始化
+        updatePreview();
+
+        // 重置按钮
+        resetBtn.addEventListener('click', () => {
+            twitterUsernameInput.value = '';
+            followerCountInput.value = '';
+            tweetCountInput.value = '';
+            registerDateInput.value = '';
+            profileLinkInput.value = '';
+            updatePreview();
+        });
+
+        // 下载按钮：一键下载
+        downloadBtn.addEventListener('click', () => {
+            const coverElement = document.getElementById('generated-cover');
+
+            // 使用 html2canvas 将 DOM 转换为 canvas
+            html2canvas(coverElement, {
+                // 使用更高的比例以获得 Retina 质量的高分辨率图像 (HIG 要求)
+                scale: 2.0, 
+                // 防止 Canvas 出现滚动条导致的切断
+                scrollX: -window.scrollX,
+                scrollY: -window.scrollY,
+                // html2canvas 的一个限制是它不总是能准确地转换模糊效果，但我们生成的卡片本身没有毛玻璃，所以没问题。
+            }).then(canvas => {
+                // 将 canvas 转换为 dataURL (PNG)
+                const imgData = canvas.toDataURL('image/png');
+
+                // 创建一个隐藏的下载链接并模拟点击
+                const link = document.createElement('a');
+                link.download = `twitter-cover-${twitterUsernameInput.value || 'account'}.png`;
+                link.href = imgData;
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>

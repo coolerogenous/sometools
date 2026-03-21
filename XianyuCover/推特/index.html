@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推特账号封面生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(180deg, #F2F2F7 0%, #E5E5EA 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            color: #1C1C1E;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 17px;
+            color: #8E8E93;
+            margin-top: 8px;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        .control-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #636366;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px 18px;
+            font-size: 17px;
+            border: 1.5px solid #D1D1D6;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1C1C1E;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #1DA1F2;
+            box-shadow: 0 0 0 4px rgba(29, 161, 242, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .color-option {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 16px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .color-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .color-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .color-option.active {
+            transform: scale(1.08);
+            border-color: #1C1C1E;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        .template-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .template-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border: 1.5px solid #D1D1D6;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #636366;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+        }
+
+        .template-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: #C7C7CC;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .template-btn.active {
+            background: linear-gradient(135deg, #1DA1F2, #1a91da);
+            border-color: #1DA1F2;
+            color: #FFFFFF;
+            box-shadow: 0 6px 20px rgba(29, 161, 242, 0.3);
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 18px 32px;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #1DA1F2, #1a91da);
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 24px rgba(29, 161, 242, 0.25);
+            margin-top: 32px;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(29, 161, 242, 0.35);
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .control-panel {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .preview-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>推特账号封面生成器</h1>
+        <p>专业级 iOS 设计风格</p>
+    </div>
+
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="control-group">
+                <label>主标题</label>
+                <input type="text" class="input-field" id="mainTitle" value="推特账号" maxlength="20">
+            </div>
+
+            <div class="control-group">
+                <label>副标题</label>
+                <input type="text" class="input-field" id="subTitle" value="正规认证 | 独立账号" maxlength="30">
+            </div>
+
+            <div class="control-group">
+                <label>标签文字</label>
+                <input type="text" class="input-field" id="tagText" value="安全 · 稳定 · 不封号" maxlength="20">
+            </div>
+
+            <div class="control-group">
+                <label>店铺名称</label>
+                <input type="text" class="input-field" id="shopName" value="@coolerogenous" maxlength="15">
+            </div>
+
+            <div class="control-group">
+                <label>主题配色</label>
+                <div class="color-options" id="colorOptions">
+                    <div class="color-option active" style="background: linear-gradient(135deg, #1DA1F2, #0D84DC);" data-color="#1DA1F2"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #FF3B30, #D62F26);" data-color="#FF3B30"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #34C759, #28A745);" data-color="#34C759"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #FF9500, #E68600);" data-color="#FF9500"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #5856D6, #4A49B8);" data-color="#5856D6"></div>
+                    <div class="color-option" style="background: linear-gradient(135deg, #FF2D55, #E6284D);" data-color="#FF2D55"></div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>设计风格</label>
+                <div class="template-options" id="templateOptions">
+                    <button class="template-btn active" data-template="modern">现代</button>
+                    <button class="template-btn" data-template="minimal">简约</button>
+                    <button class="template-btn" data-template="gradient">渐变</button>
+                </div>
+            </div>
+
+            <button class="download-btn" onclick="downloadImage()">
+                下载封面图片
+            </button>
+        </div>
+
+        <div class="preview-panel">
+            <div class="canvas-wrapper">
+                <canvas id="canvas" width="800" height="800"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let config = {
+            mainColor: '#1DA1F2',
+            mainTitle: '推特账号',
+            subTitle: '正规认证 | 独立账号',
+            tagText: '安全 · 稳定 · 不封号',
+            shopName: '@coolerogenous',
+            template: 'modern'
+        };
+
+        const inputs = {
+            mainTitle: document.getElementById('mainTitle'),
+            subTitle: document.getElementById('subTitle'),
+            tagText: document.getElementById('tagText'),
+            shopName: document.getElementById('shopName')
+        };
+
+        function init() {
+            Object.keys(inputs).forEach(key => {
+                inputs[key].addEventListener('input', () => {
+                    config[key] = inputs[key].value;
+                    draw();
+                });
+            });
+
+            const colorOptions = document.querySelectorAll('.color-option');
+            colorOptions.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    colorOptions.forEach(o => o.classList.remove('active'));
+                    e.target.classList.add('active');
+                    config.mainColor = e.target.getAttribute('data-color');
+                    draw();
+                });
+            });
+
+            const templateOptions = document.querySelectorAll('.template-btn');
+            templateOptions.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    templateOptions.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    config.template = e.target.getAttribute('data-template');
+                    draw();
+                });
+            });
+
+            draw();
+        }
+
+        function draw() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            if (config.template === 'modern') {
+                drawModern();
+            } else if (config.template === 'minimal') {
+                drawMinimal();
+            } else if (config.template === 'gradient') {
+                drawGradient();
+            }
+        }
+
+        function drawModern() {
+            const gradient = ctx.createLinearGradient(0, 0, 800, 800);
+            gradient.addColorStop(0, config.mainColor + '15');
+            gradient.addColorStop(1, '#FFFFFF');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 800, 800);
+
+            drawSquircle(ctx, 80, 200, 640, 400, 32);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+            ctx.shadowBlur = 40;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 20;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = config.mainColor + '30';
+            ctx.stroke();
+
+            ctx.fillStyle = config.mainColor;
+            ctx.beginPath();
+            ctx.arc(120, 240, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 64px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 380);
+
+            const subTitleGradient = ctx.createLinearGradient(200, 440, 600, 440);
+            subTitleGradient.addColorStop(0, config.mainColor);
+            subTitleGradient.addColorStop(1, lightenColor(config.mainColor, 20));
+            ctx.fillStyle = subTitleGradient;
+            ctx.font = '600 32px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 440);
+
+            drawSquircle(ctx, 240, 560, 320, 64, 32);
+            const tagGradient = ctx.createLinearGradient(240, 560, 560, 624);
+            tagGradient.addColorStop(0, config.mainColor);
+            tagGradient.addColorStop(1, darkenColor(config.mainColor, 15));
+            ctx.fillStyle = tagGradient;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 602);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+
+            ctx.fillStyle = '#E5E5EA';
+            ctx.fillRect(200, 700, 400, 1);
+        }
+
+        function drawMinimal() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 72px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 360);
+
+            ctx.fillStyle = config.mainColor;
+            ctx.font = '600 34px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 420);
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = config.mainColor;
+            ctx.beginPath();
+            ctx.moveTo(280, 500);
+            ctx.lineTo(520, 500);
+            ctx.stroke();
+
+            drawSquircle(ctx, 260, 540, 280, 60, 30);
+            ctx.fillStyle = config.mainColor;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 580);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+        }
+
+        function drawGradient() {
+            const bgGradient = ctx.createLinearGradient(0, 0, 800, 800);
+            bgGradient.addColorStop(0, config.mainColor + '20');
+            bgGradient.addColorStop(0.5, config.mainColor + '10');
+            bgGradient.addColorStop(1, '#FFFFFF');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, 800, 800);
+
+            const circleGradient = ctx.createRadialGradient(400, 200, 0, 400, 200, 300);
+            circleGradient.addColorStop(0, config.mainColor + '40');
+            circleGradient.addColorStop(1, config.mainColor + '00');
+            ctx.fillStyle = circleGradient;
+            ctx.beginPath();
+            ctx.arc(400, 200, 300, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawSquircle(ctx, 60, 240, 680, 360, 40);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 50;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 25;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = config.mainColor + '20';
+            ctx.stroke();
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 60px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 400);
+
+            const subTitleGradient = ctx.createLinearGradient(200, 470, 600, 470);
+            subTitleGradient.addColorStop(0, config.mainColor);
+            subTitleGradient.addColorStop(1, lightenColor(config.mainColor, 25));
+            ctx.fillStyle = subTitleGradient;
+            ctx.font = '600 30px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 470);
+
+            drawSquircle(ctx, 220, 560, 360, 68, 34);
+            const tagGradient = ctx.createLinearGradient(220, 560, 580, 628);
+            tagGradient.addColorStop(0, config.mainColor);
+            tagGradient.addColorStop(0.5, lightenColor(config.mainColor, 10));
+            tagGradient.addColorStop(1, config.mainColor);
+            ctx.fillStyle = tagGradient;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 604);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+        }
+
+        function drawSquircle(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + height / 2);
+            ctx.quadraticCurveTo(x, y, x + width / 2, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + height / 2);
+            ctx.quadraticCurveTo(x + width, y + height, x + width / 2, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height / 2);
+            ctx.closePath();
+        }
+
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const B = Math.min(255, (num >> 8 & 0x00FF) + amt);
+            const G = Math.min(255, (num & 0x0000FF) + amt);
+            return "#" + (0x1000000 + R*0x10000 + B*0x100 + G).toString(16).slice(1);
+        }
+
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const B = Math.max(0, (num >> 8 & 0x00FF) - amt);
+            const G = Math.max(0, (num & 0x0000FF) - amt);
+            return "#" + (0x1000000 + R*0x10000 + B*0x100 + G).toString(16).slice(1);
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `推特封面_${config.mainTitle}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>

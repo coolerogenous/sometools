@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>推特账号售卖封面生成器</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --accent-color: #1DA1F2; /* 初始推特蓝 */
+            --text-color: #ffffff;
+            --sub-color: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        /* 控制栏 */
+        .controls {
+            margin-bottom: 20px;
+            background: #2a2a2a;
+            padding: 15px 25px;
+            border-radius: 50px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .color-dot:hover { transform: scale(1.2); }
+        .active { border-color: white; }
+
+        #download-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        /* 封面主容器 (1:1 正方形) */
+        #capture-box {
+            width: 500px;
+            height: 500px;
+            background-color: var(--bg-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        /* 装饰背景线条 */
+        .line-decor {
+            position: absolute;
+            width: 140%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            transform: rotate(-45deg);
+            opacity: 0.15;
+            top: 30%;
+        }
+
+        /* 文字内容区 */
+        .main-ui {
+            z-index: 5;
+            text-align: center;
+        }
+
+        .logo-text {
+            font-size: 90px;
+            font-weight: 100;
+            color: var(--text-color);
+            margin-bottom: -10px;
+        }
+
+        .main-title {
+            font-size: 68px;
+            font-weight: 900;
+            color: var(--text-color);
+            margin: 0;
+            letter-spacing: 4px;
+        }
+
+        .accent-strip {
+            width: 50px;
+            height: 6px;
+            background-color: var(--accent-color);
+            margin: 20px auto;
+        }
+
+        .sub-text {
+            font-size: 20px;
+            color: var(--sub-color);
+            letter-spacing: 12px;
+            text-indent: 12px;
+            text-transform: uppercase;
+        }
+
+        /* 水印 @coolerogenous */
+        .watermark {
+            position: absolute;
+            bottom: 30px;
+            left: 35px;
+            color: var(--sub-color);
+            font-size: 14px;
+            letter-spacing: 1px;
+            font-family: monospace;
+        }
+
+        /* 右下角参数 */
+        .info-tags {
+            position: absolute;
+            bottom: 30px;
+            right: 35px;
+            text-align: right;
+            border-right: 2px solid var(--accent-color);
+            padding-right: 10px;
+            color: var(--accent-color);
+            font-size: 12px;
+            line-height: 1.5;
+            font-family: monospace;
+        }
+
+        [contenteditable="true"] {
+            outline: none;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        [contenteditable="true"]:hover {
+            background: rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="color-dot" style="background: #1DA1F2;" onclick="changeTheme('#1DA1F2')"></div>
+        <div class="color-dot" style="background: #00FF41;" onclick="changeTheme('#00FF41')"></div>
+        <div class="color-dot" style="background: #FFD700;" onclick="changeTheme('#FFD700')"></div>
+        <div class="color-dot" style="background: #ffffff;" onclick="changeTheme('#ffffff')"></div>
+        <div class="color-dot" style="background: #FF4500;" onclick="changeTheme('#FF4500')"></div>
+        
+        <button id="download-btn" onclick="takeScreenshot()">下载 PNG 封面</button>
+    </div>
+
+    <div id="capture-box">
+        <div class="line-decor"></div>
+        
+        <div class="main-ui">
+            <div class="logo-text" contenteditable="true">𝕏</div>
+            <h1 class="main-title" contenteditable="true">账号现货</h1>
+            <div class="accent-strip"></div>
+            <div class="sub-text" contenteditable="true">优质·稳定·解敏</div>
+        </div>
+
+        <div class="watermark" contenteditable="true">@coolerogenous</div>
+
+        <div class="info-tags" contenteditable="true">
+            STATUS: ACTIVE<br>
+            VERIFY: 2FA/OFF<br>
+            STOCK: READY
+        </div>
+    </div>
+
+    <p style="color: #666; margin-top: 15px; font-size: 13px;">点击文字可修改内容 | 建议在电脑端截取或下载</p>
+
+    <script>
+        // 切换配色逻辑
+        function changeTheme(color) {
+            const root = document.documentElement;
+            root.style.setProperty('--accent-color', color);
+            document.getElementById('download-btn').style.backgroundColor = color;
+            
+            // 如果是纯白主题，调整文字颜色
+            if(color === '#ffffff') {
+                root.style.setProperty('--text-color', '#000000');
+                root.style.setProperty('--bg-color', '#ffffff');
+                root.style.setProperty('--sub-color', 'rgba(0,0,0,0.4)');
+            } else {
+                root.style.setProperty('--text-color', '#ffffff');
+                root.style.setProperty('--bg-color', '#000000');
+                root.style.setProperty('--sub-color', 'rgba(255,255,255,0.5)');
+            }
+        }
+
+        // 截图保存逻辑
+        function takeScreenshot() {
+            const box = document.getElementById('capture-box');
+            html2canvas(box, {
+                scale: 2, // 2倍清晰度
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Twitter_Cover_Cooler.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>

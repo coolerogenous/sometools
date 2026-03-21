@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推特账号封面生成器 - iOS 18 Design</title>
+    <style>
+        :root {
+            /* iOS 18 Light Mode Colors */
+            --ios-bg-primary: #F2F2F7;
+            --ios-bg-secondary: #FFFFFF;
+            --ios-bg-tertiary: #F2F2F7;
+            --ios-text-primary: #000000;
+            --ios-text-secondary: #3C3C4399;
+            --ios-text-tertiary: #3C3C4366;
+            --ios-separator: #3C3C434D;
+            --ios-fill-blue: #007AFF;
+            --ios-fill-green: #34C759;
+            --ios-fill-orange: #FF9500;
+            --ios-fill-red: #FF3B30;
+            --ios-fill-gray: #8E8E93;
+            --ios-control-bg: rgba(118, 118, 128, 0.12);
+            --ios-shadow-color: rgba(0, 0, 0, 0.08);
+            --ios-backdrop-blur: 20px;
+            --ios-control-corner: 12px;
+            --ios-card-corner: 16px;
+            --ios-squircle-corner: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* iOS 18 Dark Mode Colors */
+                --ios-bg-primary: #000000;
+                --ios-bg-secondary: #1C1C1E;
+                --ios-bg-tertiary: #2C2C2E;
+                --ios-text-primary: #FFFFFF;
+                --ios-text-secondary: #EBEBF599;
+                --ios-text-tertiary: #EBEBF566;
+                --ios-separator: #EBEBF54D;
+                --ios-control-bg: rgba(118, 118, 128, 0.24);
+                --ios-shadow-color: rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'SF Pro Text', 'PingFang SC', sans-serif;
+            background-color: var(--ios-bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease;
+        }
+
+        /* iOS Navigation Bar with Glassmorphism */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(var(--ios-backdrop-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--ios-backdrop-blur)) saturate(180%);
+            border-bottom: 0.5px solid var(--ios-separator);
+            transition: all 0.3s ease;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            header {
+                background: rgba(28, 28, 30, 0.6);
+            }
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ios-text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-subtitle {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--ios-text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 24px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* iOS Card Style */
+        .ios-card {
+            background: var(--ios-bg-secondary);
+            border-radius: var(--ios-card-corner);
+            padding: 20px;
+            box-shadow: 0 2px 8px var(--ios-shadow-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-card:hover {
+            box-shadow: 0 4px 16px var(--ios-shadow-color);
+        }
+
+        /* Form Controls */
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ios-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--ios-text-primary);
+            background: var(--ios-bg-tertiary);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            transition: all 0.2s ease;
+        }
+
+        .form-input::placeholder {
+            color: var(--ios-text-tertiary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: var(--ios-control-bg);
+            box-shadow: 0 0 0 2px var(--ios-fill-blue);
+        }
+
+        /* Color Picker Grid */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .color-option {
+            aspect-ratio: 1;
+            border-radius: var(--ios-control-corner);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .color-option:hover {
+            transform: scale(1.05);
+        }
+
+        .color-option.active {
+            transform: scale(1.1);
+            border-color: var(--ios-text-primary);
+            box-shadow: 0 4px 12px var(--ios-shadow-color);
+        }
+
+        /* Template Selector */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .template-btn {
+            padding: 14px 16px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--ios-text-primary);
+            background: var(--ios-bg-tertiary);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .template-btn:hover {
+            background: var(--ios-control-bg);
+            transform: translateY(-2px);
+        }
+
+        .template-btn.active {
+            background: var(--ios-fill-blue);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        /* Preview Area */
+        .preview-card {
+            position: sticky;
+            top: 100px;
+            background: var(--ios-bg-secondary);
+            border-radius: var(--ios-squircle-corner);
+            padding: 24px;
+            box-shadow: 0 4px 24px var(--ios-shadow-color);
+        }
+
+        .canvas-container {
+            position: relative;
+            border-radius: var(--ios-control-corner);
+            overflow: hidden;
+            box-shadow: 0 8px 32px var(--ios-shadow-color);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Action Buttons */
+        .action-section {
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #FFFFFF;
+            background: var(--ios-fill-blue);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0063D1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* iOS Style Toggle */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            color: var(--ios-text-primary);
+        }
+
+        .ios-toggle {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background: var(--ios-control-bg);
+            border-radius: 31px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .ios-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-toggle.active {
+            background: var(--ios-fill-green);
+        }
+
+        .ios-toggle.active::after {
+            transform: translateX(20px);
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ios-text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 0.5px solid var(--ios-separator);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .nav-title {
+                font-size: 20px;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Smooth Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ios-card {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="nav-content">
+            <div>
+                <div class="nav-title">封面生成器</div>
+                <div class="nav-subtitle">iOS 18 Design System</div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="content-grid">
+            <section class="control-panel">
+                <article class="ios-card">
+                    <h2 class="section-title">账号信息</h2>
+                    
+                    <div class="form-section">
+                        <label class="form-label" for="mainTitle">主标题</label>
+                        <input 
+                            type="text" 
+                            id="mainTitle" 
+                            class="form-input" 
+                            placeholder="输入主标题"
+                            value="推特账号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="subTitle">副标题</label>
+                        <input 
+                            type="text" 
+                            id="subTitle" 
+                            class="form-input" 
+                            placeholder="输入副标题"
+                            value="正规认证 | 独立账号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="tagText">标签文字</label>
+                        <input 
+                            type="text" 
+                            id="tagText" 
+                            class="form-input" 
+                            placeholder="输入标签文字"
+                            value="安全 · 稳定 · 不封号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="shopName">店铺名称</label>
+                        <input 
+                            type="text" 
+                            id="shopName" 
+                            class="form-input" 
+                            placeholder="输入店铺名称"
+                            value="@coolerogenous"
+                        >
+                    </div>
+                </article>
+
+                <article class="ios-card" style="margin-top: 24px;">
+                    <h2 class="section-title">视觉样式</h2>
+
+                    <div class="form-section">
+                        <label class="form-label">主题配色</label>
+                        <div class="color-grid" id="colorOptions">
+                            <div class="color-option active" style="background: linear-gradient(135deg, #007AFF, #0055B3);" data-color="#007AFF"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #34C759, #28A745);" data-color="#34C759"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #FF9500, #E68600);" data-color="#FF9500"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #FF3B30, #D62F26);" data-color="#FF3B30"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #5856D6, #4A49B8);" data-color="#5856D6"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #FF2D55, #E6284D);" data-color="#FF2D55"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label">模板样式</label>
+                        <div class="template-grid" id="templateOptions">
+                            <button class="template-btn active" data-template="modern">现代</button>
+                            <button class="template-btn" data-template="minimal">极简</button>
+                            <button class="template-btn" data-template="gradient">渐变</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="toggle-container">
+                            <span class="toggle-label">深色模式</span>
+                            <div class="ios-toggle" id="darkModeToggle"></div>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="action-section">
+                    <button class="btn-primary" id="downloadBtn">保存图片</button>
+                </div>
+            </section>
+
+            <aside class="preview-section">
+                <div class="preview-card">
+                    <h2 class="section-title">实时预览</h2>
+                    <div class="canvas-container">
+                        <canvas id="previewCanvas" width="800" height="800"></canvas>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let config = {
+            mainColor: '#007AFF',
+            mainTitle: '推特账号',
+            subTitle: '正规认证 | 独立账号',
+            tagText: '安全 · 稳定 · 不封号',
+            shopName: '@coolerogenous',
+            template: 'modern',
+            darkMode: false
+        };
+
+        // Utility Functions
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function lightenColor(hex, percent) {
+            const num = parseInt(hex.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return "#" + (0x1000000 + R*0x10000 + G*0x100 + B).toString(16).slice(1);
+        }
+
+        function darkenColor(hex, percent) {
+            const num = parseInt(hex.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return "#" + (0x1000000 + R*0x10000 + G*0x100 + B).toString(16).slice(1);
+        }
+
+        function drawSquircle(ctx, x, y, width, height, radius) {
+            const k = 0.55;
+            const ax = x + radius;
+            const ay = y + radius;
+            const bx = x + width - radius;
+            const by = y + height - radius;
+
+            ctx.beginPath();
+            ctx.moveTo(ax, y);
+            ctx.lineTo(bx, y);
+            ctx.bezierCurveTo(bx + radius * k, y, bx + radius, ay, bx + radius, ay);
+            ctx.lineTo(bx + radius, by);
+            ctx.bezierCurveTo(bx + radius, by + radius * k, bx, by + radius, bx, by + radius);
+            ctx.lineTo(ax, by + radius);
+            ctx.bezierCurveTo(ax - radius * k, by + radius, x, by, x, by);
+            ctx.lineTo(x, ay);
+            ctx.bezierCurveTo(x, ay - radius * k, ax - radius * k, y, ax, y);
+            ctx.closePath();
+        }
+
+        function drawFrostedGlass(ctx, x, y, width, height, blur) {
+            ctx.save();
+            
+            const frostedGradient = ctx.createLinearGradient(x, y, x + width, y + height);
+            frostedGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+            frostedGradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+            
+            drawSquircle(ctx, x, y, width, height, blur);
+            ctx.fillStyle = frostedGradient;
+            ctx.fill();
+            
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.stroke();
+            
+            const highlightGradient = ctx.createLinearGradient(x, y, x, y + height * 0.3);
+            highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+            highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            
+            ctx.beginPath();
+            drawSquircle(ctx, x, y, width, height * 0.3, blur);
+            ctx.clip();
+            ctx.fillStyle = highlightGradient;
+            ctx.fillRect(x, y, width, height * 0.3);
+            
+            ctx.restore();
+        }
+
+        // Drawing Functions
+        function drawModern() {
+            const bgGradient = ctx.createLinearGradient(0, 0, 800, 800);
+            bgGradient.addColorStop(0, hexToRgba(config.mainColor, 0.05));
+            bgGradient.addColorStop(1, '#FFFFFF');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, 800, 800);
+
+            drawFrostedGlass(ctx, 100, 100, 200, 150, 20);
+            drawFrostedGlass(ctx, 500, 650, 180, 120, 15);
+
+            drawSquircle(ctx, 80, 200, 640, 400, 32);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+            ctx.shadowBlur = 40;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 20;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = hexToRgba(config.mainColor, 0.2);
+            ctx.stroke();
+
+            ctx.fillStyle = config.mainColor;
+            ctx.beginPath();
+            ctx.arc(120, 240, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 64px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 380);
+
+            const subTitleGradient = ctx.createLinearGradient(200, 440, 600, 440);
+            subTitleGradient.addColorStop(0, config.mainColor);
+            subTitleGradient.addColorStop(1, lightenColor(config.mainColor, 30));
+            ctx.fillStyle = subTitleGradient;
+            ctx.font = '600 32px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 440);
+
+            drawSquircle(ctx, 240, 560, 320, 64, 32);
+            const tagGradient = ctx.createLinearGradient(240, 560, 560, 624);
+            tagGradient.addColorStop(0, config.mainColor);
+            tagGradient.addColorStop(1, darkenColor(config.mainColor, 20));
+            ctx.fillStyle = tagGradient;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 602);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+
+            ctx.fillStyle = '#E5E5EA';
+            ctx.fillRect(200, 700, 400, 1);
+        }
+
+        function drawMinimal() {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 800, 800);
+
+            drawFrostedGlass(ctx, 60, 120, 180, 180, 20);
+            drawFrostedGlass(ctx, 560, 520, 160, 160, 18);
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 72px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 360);
+
+            ctx.fillStyle = config.mainColor;
+            ctx.font = '600 34px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 420);
+
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = config.mainColor;
+            ctx.beginPath();
+            ctx.moveTo(280, 500);
+            ctx.lineTo(520, 500);
+            ctx.stroke();
+
+            drawSquircle(ctx, 260, 540, 280, 60, 30);
+            ctx.fillStyle = config.mainColor;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 580);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+        }
+
+        function drawGradient() {
+            const bgGradient = ctx.createLinearGradient(0, 0, 800, 800);
+            bgGradient.addColorStop(0, hexToRgba(config.mainColor, 0.08));
+            bgGradient.addColorStop(0.5, hexToRgba(config.mainColor, 0.04));
+            bgGradient.addColorStop(1, '#FFFFFF');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, 800, 800);
+
+            drawFrostedGlass(ctx, 80, 80, 220, 180, 24);
+            drawFrostedGlass(ctx, 520, 580, 200, 160, 20);
+            drawFrostedGlass(ctx, 50, 600, 140, 140, 18);
+
+            const circleGradient = ctx.createRadialGradient(400, 200, 0, 400, 200, 300);
+            circleGradient.addColorStop(0, hexToRgba(config.mainColor, 0.1));
+            circleGradient.addColorStop(1, hexToRgba(config.mainColor, 0));
+            ctx.fillStyle = circleGradient;
+            ctx.beginPath();
+            ctx.arc(400, 200, 300, 0, Math.PI * 2);
+            ctx.fill();
+
+            drawSquircle(ctx, 60, 240, 680, 360, 40);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+            ctx.shadowBlur = 50;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 25;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = hexToRgba(config.mainColor, 0.15);
+            ctx.stroke();
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#1C1C1E';
+            ctx.font = '700 60px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.mainTitle, 400, 400);
+
+            const subTitleGradient = ctx.createLinearGradient(200, 470, 600, 470);
+            subTitleGradient.addColorStop(0, config.mainColor);
+            subTitleGradient.addColorStop(1, lightenColor(config.mainColor, 25));
+            ctx.fillStyle = subTitleGradient;
+            ctx.font = '600 30px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.subTitle, 400, 470);
+
+            drawSquircle(ctx, 220, 560, 360, 68, 34);
+            const tagGradient = ctx.createLinearGradient(220, 560, 580, 628);
+            tagGradient.addColorStop(0, config.mainColor);
+            tagGradient.addColorStop(0.5, lightenColor(config.mainColor, 10));
+            tagGradient.addColorStop(1, config.mainColor);
+            ctx.fillStyle = tagGradient;
+            ctx.fill();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '600 26px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.tagText, 400, 604);
+
+            ctx.fillStyle = '#8E8E93';
+            ctx.font = '400 18px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.fillText(config.shopName, 400, 740);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            switch(config.template) {
+                case 'minimal':
+                    drawMinimal();
+                    break;
+                case 'gradient':
+                    drawGradient();
+                    break;
+                default:
+                    drawModern();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('mainTitle').addEventListener('input', (e) => {
+            config.mainTitle = e.target.value;
+            draw();
+        });
+
+        document.getElementById('subTitle').addEventListener('input', (e) => {
+            config.subTitle = e.target.value;
+            draw();
+        });
+
+        document.getElementById('tagText').addEventListener('input', (e) => {
+            config.tagText = e.target.value;
+            draw();
+        });
+
+        document.getElementById('shopName').addEventListener('input', (e) => {
+            config.shopName = e.target.value;
+            draw();
+        });
+
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                config.mainColor = option.dataset.color;
+                draw();
+            });
+        });
+
+        document.querySelectorAll('.template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                config.template = btn.dataset.template;
+                draw();
+            });
+        });
+
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            config.darkMode = !config.darkMode;
+            document.getElementById('darkModeToggle').classList.toggle('active');
+            if (config.darkMode) {
+                document.body.style.backgroundColor = '#000000';
+            } else {
+                document.body.style.backgroundColor = '#F2F2F7';
+            }
+            draw();
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'twitter-cover.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initial Draw
+        draw();
+    </script>
+</body>
+</html>

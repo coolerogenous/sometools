@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>闲鱼封面生成器 - Google风格</title>
+    <title>账号封面生成器 - 谷歌 苹果 推特</title>
     <style>
         :root {
             --g-blue: #4285F4;
             --g-red: #EA4335;
             --g-yellow: #FBBC05;
             --g-green: #34A853;
+            --apple-blue: #007AFF;
+            --twitter-blue: #1DA1F2;
             --bg-color: #f8f9fa;
         
         body {
@@ -103,10 +105,20 @@
 </head>
 <body>
 
-    <h1>闲鱼封面生成器 (Google Style)</h1>
+    <h1>账号封面生成器</h1>
 
     <div class="container">
         <div class="controls">
+            <div class="input-group">
+                <label>平台选择</label>
+                <select id="platform">
+                    <option value="google">Google 账号</option>
+                    <option value="apple">Apple 账号</option>
+                    <option value="twitter">Twitter 账号</option>
+                    <option value="other">其他账号</option>
+                </select>
+            </div>
+
             <div class="input-group">
                 <label>主色调 (Theme Color)</label>
                 <div class="color-picker" id="colorPicker">
@@ -114,17 +126,19 @@
                     <div class="color-btn" style="background: #EA4335;" data-color="#EA4335" data-name="red"></div>
                     <div class="color-btn" style="background: #FBBC05;" data-color="#FBBC05" data-name="yellow"></div>
                     <div class="color-btn" style="background: #34A853;" data-color="#34A853" data-name="green"></div>
+                    <div class="color-btn" style="background: #007AFF;" data-color="#007AFF" data-name="apple-blue"></div>
+                    <div class="color-btn" style="background: #1DA1F2;" data-color="#1DA1F2" data-name="twitter-blue"></div>
                 </div>
             </div>
 
             <div class="input-group">
                 <label>主标题 (产品名)</label>
-                <input type="text" id="mainTitle" value="Gemini 3.0 Pro">
+                <input type="text" id="mainTitle" value="Google 账号">
             </div>
 
             <div class="input-group">
                 <label>副标题 (卖点)</label>
-                <input type="text" id="subTitle" value="正规代认 | 独立账号">
+                <input type="text" id="subTitle" value="正规认证 | 独立账号">
             </div>
 
             <div class="input-group">
@@ -137,7 +151,7 @@
                 <input type="text" id="shopName" value="@您的店铺名">
             </div>
             
-            <button class="btn-download" onclick="downloadImage()">下载封面图</button>
+            <button class="btn-download" onclick="downloadImage()">一键下载封面图</button>
         </div>
 
         <canvas id="canvas" width="800" height="800"></canvas>
@@ -149,6 +163,7 @@
         
         // 状态变量
         let config = {
+            platform: 'google',
             mainColor: '#4285F4', // 默认蓝色
             mainTitle: '',
             subTitle: '',
@@ -156,8 +171,17 @@
             shopName: ''
         };
 
+        // 平台颜色配置
+        const platformColors = {
+            google: '#4285F4',
+            apple: '#007AFF',
+            twitter: '#1DA1F2',
+            other: '#4285F4'
+        };
+
         // 获取DOM元素
         const inputs = {
+            platform: document.getElementById('platform'),
             mainTitle: document.getElementById('mainTitle'),
             subTitle: document.getElementById('subTitle'),
             tagText: document.getElementById('tagText'),
@@ -169,6 +193,7 @@
             // 绑定输入事件
             Object.keys(inputs).forEach(key => {
                 inputs[key].addEventListener('input', updateCanvas);
+                inputs[key].addEventListener('change', updateCanvas);
             });
 
             // 绑定颜色选择
@@ -195,21 +220,45 @@
         // 绘图核心逻辑
         function updateCanvas() {
             // 更新配置
+            config.platform = inputs.platform.value;
             config.mainTitle = inputs.mainTitle.value;
             config.subTitle = inputs.subTitle.value;
             config.tagText = inputs.tagText.value;
             config.shopName = inputs.shopName.value;
 
+            // 根据平台自动设置颜色
+            if (!config.mainColor || config.mainColor === platformColors[config.platform]) {
+                config.mainColor = platformColors[config.platform];
+                // 更新颜色选择器
+                const colorBtns = document.querySelectorAll('.color-btn');
+                colorBtns.forEach(btn => {
+                    if (btn.getAttribute('data-color') === config.mainColor) {
+                        btn.classList.add('active');
+                        btn.style.borderColor = '#333';
+                    } else {
+                        btn.classList.remove('active');
+                        btn.style.borderColor = 'transparent';
+                    }
+                });
+            }
+
             // 1. 清空画布 & 绘制白色背景
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, 800, 800);
 
-            // 2. 绘制顶部 Google 四色装饰条
+            // 2. 绘制顶部装饰条
             const barHeight = 20;
-            ctx.fillStyle = '#4285F4'; ctx.fillRect(0, 0, 200, barHeight);
-            ctx.fillStyle = '#EA4335'; ctx.fillRect(200, 0, 200, barHeight);
-            ctx.fillStyle = '#FBBC05'; ctx.fillRect(400, 0, 200, barHeight);
-            ctx.fillStyle = '#34A853'; ctx.fillRect(600, 0, 200, barHeight);
+            if (config.platform === 'google') {
+                // Google 四色装饰条
+                ctx.fillStyle = '#4285F4'; ctx.fillRect(0, 0, 200, barHeight);
+                ctx.fillStyle = '#EA4335'; ctx.fillRect(200, 0, 200, barHeight);
+                ctx.fillStyle = '#FBBC05'; ctx.fillRect(400, 0, 200, barHeight);
+                ctx.fillStyle = '#34A853'; ctx.fillRect(600, 0, 200, barHeight);
+            } else {
+                // 单色装饰条
+                ctx.fillStyle = config.mainColor;
+                ctx.fillRect(0, 0, 800, barHeight);
+            }
 
             // 3. 绘制核心视觉图形 (圆角卡片背景)
             // 这是一个稍微带点透明度的主色背景，增加层次感
@@ -223,16 +272,23 @@
             ctx.stroke();
 
             // 4. 绘制左上角装饰点 (模拟浏览器按钮)
-            ctx.fillStyle = '#EA4335'; ctx.beginPath(); ctx.arc(90, 190, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#FBBC05'; ctx.beginPath(); ctx.arc(120, 190, 8, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#34A853'; ctx.beginPath(); ctx.arc(150, 190, 8, 0, Math.PI*2); ctx.fill();
-
+            if (config.platform === 'google') {
+                ctx.fillStyle = '#EA4335'; ctx.beginPath(); ctx.arc(90, 190, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#FBBC05'; ctx.beginPath(); ctx.arc(120, 190, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#34A853'; ctx.beginPath(); ctx.arc(150, 190, 8, 0, Math.PI*2); ctx.fill();
+            } else if (config.platform === 'apple') {
+                // Apple 风格装饰
+                ctx.fillStyle = config.mainColor; ctx.beginPath(); ctx.arc(105, 190, 12, 0, Math.PI*2); ctx.fill();
+            } else if (config.platform === 'twitter') {
+                // Twitter 风格装饰
+                ctx.fillStyle = config.mainColor; ctx.beginPath(); ctx.arc(105, 190, 12, 0, Math.PI*2); ctx.fill();
+            }
 
             // 5. 绘制文字
             ctx.textAlign = 'center';
 
             // 主标题
-            ctx.fillStyle = '#202124'; // Google 深灰
+            ctx.fillStyle = '#202124'; // 深灰
             ctx.font = 'bold 80px "Microsoft YaHei", sans-serif';
             ctx.fillText(config.mainTitle, 400, 360);
 
@@ -274,7 +330,7 @@
         // 下载图片
         function downloadImage() {
             const link = document.createElement('a');
-            link.download = `闲鱼封面_${config.mainTitle}.png`;
+            link.download = `账号封面_${config.mainTitle}.png`;
             link.href = canvas.toDataURL();
             link.click();
         }

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推特账号封面生成器 - iOS 18 风格</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* 定义 iOS 18 设计变量 (支持浅色/深色模式自动切换) */
+        :root {
+            --system-background: #ffffff;
+            --system-gray-1: #8e8e93;
+            --system-gray-6: #f2f2f7;
+            --label: #000000;
+            --secondary-label: #3c3c4399;
+            --separator: #c6c6c8;
+            --tint-color: #1d9bf0; /* 推特蓝 */
+            --nav-bar-bg: rgba(255, 255, 255, 0.6);
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --card-bg: #ffffff;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --control-corner: 12px;
+            --card-corner: 16px;
+            --font-primary: -apple-system, BlinkMacSystemFont, "SF Pro", Helvetica, Arial, sans-serif;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --system-background: #000000;
+                --system-gray-1: #8e8e93;
+                --system-gray-6: #1c1c1e;
+                --label: #ffffff;
+                --secondary-label: #ebebf599;
+                --separator: #38383a;
+                --nav-bar-bg: rgba(28, 28, 30, 0.6);
+                --shadow: 0 2px 8px rgba(255,255,255,0.08);
+                --card-bg: #1c1c1e;
+                --card-shadow: 0 4px 12px rgba(255,255,255,0.05);
+            }
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--system-gray-6);
+            color: var(--label);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 (语义化标签 header, nav) */
+        header nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            background: var(--nav-bar-bg);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+        }
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--label);
+        }
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            font-size: 16px;
+            color: var(--tint-color);
+            text-decoration: none;
+        }
+
+        /* 主内容区域 (语义化标签 main) */
+        main {
+            display: flex;
+            flex: 1;
+            margin-top: 80px; /* 导航栏高度 */
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* 预览区域 (语义化标签 article) */
+        article {
+            flex: 3;
+            background: var(--card-bg);
+            border-radius: var(--card-corner);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        /* 预览卡片 (400x400px, 用于捕获) */
+        #capture-card {
+            width: 400px;
+            height: 400px;
+            background-color: var(--system-background);
+            border: 1px solid var(--separator);
+            border-radius: var(--card-corner);
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .card-header {
+            height: 60px;
+            background-color: var(--tint-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 20px;
+            font-weight: 700;
+            gap: 10px;
+        }
+        .card-body {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            text-align: center;
+        }
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--label);
+        }
+        .card-details {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--secondary-label);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .card-detail {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .card-cta {
+            font-size: 16px;
+            color: var(--tint-color);
+            text-decoration: underline;
+        }
+
+        /* 配置区域 (语义化标签 aside) */
+        aside {
+            flex: 2;
+            background: var(--card-bg);
+            border-radius: var(--card-corner);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .aside-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--label);
+            margin-bottom: 10px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-label {
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--secondary-label);
+        }
+        .control-input {
+            font-family: var(--font-primary);
+            font-size: 16px;
+            padding: 12px;
+            border: 1px solid var(--separator);
+            border-radius: var(--control-corner);
+            background-color: var(--system-background);
+            color: var(--label);
+            transition: border-color 0.2s;
+        }
+        .control-input:focus {
+            outline: none;
+            border-color: var(--tint-color);
+        }
+
+        /* 导出区域 (语义化标签 section) */
+        section {
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        #export-btn {
+            background-color: var(--tint-color);
+            color: white;
+            font-family: var(--font-primary);
+            font-size: 16px;
+            border: none;
+            border-radius: var(--control-corner);
+            padding: 16px 32px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: var(--shadow);
+        }
+        #export-btn:hover {
+            background-color: #0b7fdb;
+        }
+        #export-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* 底部 (语义化标签 footer) */
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--secondary-label);
+            margin-top: auto;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-title">推特账号封面生成器</div>
+            <a href="#" class="nav-links">关于</a>
+        </nav>
+    </header>
+
+    <main>
+        <article>
+            <div id="capture-card">
+                <div class="card-header">
+                    𝕏 <span>精品账号售卖</span>
+                </div>
+                <div class="card-body">
+                    <div class="card-title" id="card-title-preview">全球精品账号交易</div>
+                    <div class="card-details">
+                        <div class="card-detail">
+                            <span>🗓️</span> <span id="card-detail1-preview">多种注册年份 (2006-2024)</span>
+                        </div>
+                        <div class="card-detail">
+                            <span>👤</span> <span id="card-detail2-preview">100 - 1M+ 真实活跃粉丝</span>
+                        </div>
+                        <div class="card-detail">
+                            <span>🌎</span> <span id="card-detail3-preview">全球各地区，多种功能支持</span>
+                        </div>
+                        <div class="card-detail">
+                            <span>🛡️</span> <span>账号安全，极速交付</span>
+                        </div>
+                    </div>
+                    <div class="card-cta">查看更多详情 -></div>
+                </div>
+            </div>
+        </article>
+
+        <aside>
+            <div class="aside-title">配置封面 (Configure Cover)</div>
+            <div class="control-group">
+                <label for="card-title-input" class="control-label">卡片主标题 (Main Title)</label>
+                <input type="text" id="card-title-input" class="control-input" value="全球精品账号交易">
+            </div>
+            <div class="control-group">
+                <label for="card-detail1-input" class="control-label">描述 1 (年份)</label>
+                <input type="text" id="card-detail1-input" class="control-input" value="多种注册年份 (2006-2024)">
+            </div>
+            <div class="control-group">
+                <label for="card-detail2-input" class="control-label">描述 2 (粉丝)</label>
+                <input type="text" id="card-detail2-input" class="control-input" value="100 - 1M+ 真实活跃粉丝">
+            </div>
+            <div class="control-group">
+                <label for="card-detail3-input" class="control-label">描述 3 (地区)</label>
+                <input type="text" id="card-detail3-input" class="control-input" value="全球各地区，多种功能支持">
+            </div>
+        </aside>
+    </main>
+
+    <section>
+        <button id="export-btn">一键导出图片 (Export Image)</button>
+    </section>
+
+    <footer>
+        由 iOS 18 风格封面生成器提供服务
+    </footer>
+
+    <script>
+        // --- 同步预览和配置 ---
+        const titleInput = document.getElementById('card-title-input');
+        const detail1Input = document.getElementById('card-detail1-input');
+        const detail2Input = document.getElementById('card-detail2-input');
+        const detail3Input = document.getElementById('card-detail3-input');
+
+        const titlePreview = document.getElementById('card-title-preview');
+        const detail1Preview = document.getElementById('card-detail1-preview');
+        const detail2Preview = document.getElementById('card-detail2-preview');
+        const detail3Preview = document.getElementById('card-detail3-preview');
+
+        function syncText(input, preview) {
+            input.addEventListener('input', () => {
+                preview.textContent = input.value;
+            });
+        }
+
+        syncText(titleInput, titlePreview);
+        syncText(detail1Input, detail1Preview);
+        syncText(detail2Input, detail2Preview);
+        syncText(detail3Input, detail3Preview);
+
+        // --- 导出图片 ---
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const captureElement = document.getElementById('capture-card');
+            
+            // 使用 html2canvas 捕获卡片
+            html2canvas(captureElement).then(canvas => {
+                // 将 canvas 转换为图片数据
+                const link = document.createElement('a');
+                link.download = 'twitter-account-seller-cover.png';
+                link.href = canvas.toDataURL();
+                // 触发下载
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>

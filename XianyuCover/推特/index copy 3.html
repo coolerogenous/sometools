@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推特账号封面生成器 - 蜡笔手绘风</title>
+    <style>
+        :root {
+            /* iOS 18 Light Mode Colors */
+            --ios-bg-primary: #F2F2F7;
+            --ios-bg-secondary: #FFFFFF;
+            --ios-bg-tertiary: #F2F2F7;
+            --ios-text-primary: #000000;
+            --ios-text-secondary: #3C3C4399;
+            --ios-text-tertiary: #3C3C4366;
+            --ios-separator: #3C3C434D;
+            --ios-fill-blue: #007AFF;
+            --ios-fill-green: #34C759;
+            --ios-fill-orange: #FF9500;
+            --ios-fill-red: #FF3B30;
+            --ios-fill-gray: #8E8E93;
+            --ios-control-bg: rgba(118, 118, 128, 0.12);
+            --ios-shadow-color: rgba(0, 0, 0, 0.08);
+            --ios-backdrop-blur: 20px;
+            --ios-control-corner: 12px;
+            --ios-card-corner: 16px;
+            --ios-squircle-corner: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* iOS 18 Dark Mode Colors */
+                --ios-bg-primary: #000000;
+                --ios-bg-secondary: #1C1C1E;
+                --ios-bg-tertiary: #2C2C2E;
+                --ios-text-primary: #FFFFFF;
+                --ios-text-secondary: #EBEBF599;
+                --ios-text-tertiary: #EBEBF566;
+                --ios-separator: #EBEBF54D;
+                --ios-control-bg: rgba(118, 118, 128, 0.24);
+                --ios-shadow-color: rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro SC', 'SF Pro Text', 'PingFang SC', sans-serif;
+            background-color: var(--ios-bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease;
+        }
+
+        /* iOS Navigation Bar with Glassmorphism */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(var(--ios-backdrop-blur)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--ios-backdrop-blur)) saturate(180%);
+            border-bottom: 0.5px solid var(--ios-separator);
+            transition: all 0.3s ease;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            header {
+                background: rgba(28, 28, 30, 0.6);
+            }
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ios-text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-subtitle {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--ios-text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 24px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* iOS Card Style */
+        .ios-card {
+            background: var(--ios-bg-secondary);
+            border-radius: var(--ios-card-corner);
+            padding: 20px;
+            box-shadow: 0 2px 8px var(--ios-shadow-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-card:hover {
+            box-shadow: 0 4px 16px var(--ios-shadow-color);
+        }
+
+        /* Form Controls */
+        .form-section {
+            margin-bottom: 24px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ios-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--ios-text-primary);
+            background: var(--ios-bg-tertiary);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            transition: all 0.2s ease;
+        }
+
+        .form-input::placeholder {
+            color: var(--ios-text-tertiary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: var(--ios-control-bg);
+            box-shadow: 0 0 0 2px var(--ios-fill-blue);
+        }
+
+        /* Color Picker Grid */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .color-option {
+            aspect-ratio: 1;
+            border-radius: var(--ios-control-corner);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .color-option:hover {
+            transform: scale(1.05);
+        }
+
+        .color-option.active {
+            transform: scale(1.1);
+            border-color: var(--ios-text-primary);
+            box-shadow: 0 4px 12px var(--ios-shadow-color);
+        }
+
+        /* Template Selector */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .template-btn {
+            padding: 14px 16px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--ios-text-primary);
+            background: var(--ios-bg-tertiary);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .template-btn:hover {
+            background: var(--ios-control-bg);
+            transform: translateY(-2px);
+        }
+
+        .template-btn.active {
+            background: var(--ios-fill-blue);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        /* Preview Area */
+        .preview-card {
+            position: sticky;
+            top: 100px;
+            background: var(--ios-bg-secondary);
+            border-radius: var(--ios-squircle-corner);
+            padding: 24px;
+            box-shadow: 0 4px 24px var(--ios-shadow-color);
+        }
+
+        .canvas-container {
+            position: relative;
+            border-radius: var(--ios-control-corner);
+            overflow: hidden;
+            box-shadow: 0 8px 32px var(--ios-shadow-color);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Action Buttons */
+        .action-section {
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #FFFFFF;
+            background: var(--ios-fill-blue);
+            border: none;
+            border-radius: var(--ios-control-corner);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #0063D1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* iOS Style Toggle */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            color: var(--ios-text-primary);
+        }
+
+        .ios-toggle {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background: var(--ios-control-bg);
+            border-radius: 31px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .ios-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ios-toggle.active {
+            background: var(--ios-fill-green);
+        }
+
+        .ios-toggle.active::after {
+            transform: translateX(20px);
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--ios-text-primary);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 0.5px solid var(--ios-separator);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .nav-title {
+                font-size: 20px;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Smooth Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ios-card {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="nav-content">
+            <div>
+                <div class="nav-title">封面生成器</div>
+                <div class="nav-subtitle">蜡笔手绘风格</div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="content-grid">
+            <section class="control-panel">
+                <article class="ios-card">
+                    <h2 class="section-title">账号信息</h2>
+                    
+                    <div class="form-section">
+                        <label class="form-label" for="mainTitle">主标题</label>
+                        <input 
+                            type="text" 
+                            id="mainTitle" 
+                            class="form-input" 
+                            placeholder="输入主标题"
+                            value="推特账号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="subTitle">副标题</label>
+                        <input 
+                            type="text" 
+                            id="subTitle" 
+                            class="form-input" 
+                            placeholder="输入副标题"
+                            value="正规认证 | 独立账号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="tagText">标签文字</label>
+                        <input 
+                            type="text" 
+                            id="tagText" 
+                            class="form-input" 
+                            placeholder="输入标签文字"
+                            value="安全 · 稳定 · 不封号"
+                        >
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label" for="shopName">店铺名称</label>
+                        <input 
+                            type="text" 
+                            id="shopName" 
+                            class="form-input" 
+                            placeholder="输入店铺名称"
+                            value="@coolerogenous"
+                        >
+                    </div>
+                </article>
+
+                <article class="ios-card" style="margin-top: 24px;">
+                    <h2 class="section-title">视觉样式</h2>
+
+                    <div class="form-section">
+                        <label class="form-label">主题配色</label>
+                        <div class="color-grid" id="colorOptions">
+                            <div class="color-option active" style="background: linear-gradient(135deg, #FFB347, #FF8C00);" data-color="#FFB347"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #FF6961, #FF1493);" data-color="#FF6961"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #77DD77, #228B22);" data-color="#77DD77"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #AEC6CF, #4169E1);" data-color="#AEC6CF"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #DDA0DD, #9370DB);" data-color="#DDA0DD"></div>
+                            <div class="color-option" style="background: linear-gradient(135deg, #FFD700, #FFA500);" data-color="#FFD700"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label">模板样式</label>
+                        <div class="template-grid" id="templateOptions">
+                            <button class="template-btn active" data-template="modern">可爱</button>
+                            <button class="template-btn" data-template="minimal">简约</button>
+                            <button class="template-btn" data-template="gradient">彩虹</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="toggle-container">
+                            <span class="toggle-label">深色模式</span>
+                            <div class="ios-toggle" id="darkModeToggle"></div>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="action-section">
+                    <button class="btn-primary" id="downloadBtn">保存图片</button>
+                </div>
+            </section>
+
+            <aside class="preview-section">
+                <div class="preview-card">
+                    <h2 class="section-title">实时预览</h2>
+                    <div class="canvas-container">
+                        <canvas id="previewCanvas" width="800" height="800"></canvas>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let config = {
+            mainColor: '#FFB347',
+            mainTitle: '推特账号',
+            subTitle: '正规认证 | 独立账号',
+            tagText: '安全 · 稳定 · 不封号',
+            shopName: '@coolerogenous',
+            template: 'modern',
+            darkMode: false
+        };
+
+        // Utility Functions
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function lightenColor(hex, percent) {
+            const num = parseInt(hex.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return "#" + (0x1000000 + R*0x10000 + G*0x100 + B).toString(16).slice(1);
+        }
+
+        function darkenColor(hex, percent) {
+            const num = parseInt(hex.replace("#",""),16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return "#" + (0x1000000 + R*0x10000 + G*0x100 + B).toString(16).slice(1);
+        }
+
+        // 蜡笔手绘风格工具函数
+        function drawCrayonLine(ctx, x1, y1, x2, y2, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // 创建蜡笔纹理
+            const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(0.5, lightenColor(color, 10));
+            gradient.addColorStop(1, color);
+            ctx.strokeStyle = gradient;
+            
+            // 绘制多条线模拟蜡笔质感
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                const offsetX = (Math.random() - 0.5) * 2;
+                const offsetY = (Math.random() - 0.5) * 2;
+                ctx.moveTo(x1 + offsetX, y1 + offsetY);
+                ctx.lineTo(x2 + offsetX, y2 + offsetY);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawCrayonCircle(ctx, x, y, radius, color, filled = false) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            
+            if (filled) {
+                // 填充时创建渐变
+                const gradient = ctx.createRadialGradient(x - radius/3, y - radius/3, 0, x, y, radius);
+                gradient.addColorStop(0, lightenColor(color, 15));
+                gradient.addColorStop(1, color);
+                ctx.fillStyle = gradient;
+            }
+            
+            ctx.beginPath();
+            // 手绘风格的圆（略不规则）
+            for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                const r = radius + (Math.random() - 0.5) * 3;
+                const px = x + Math.cos(angle) * r;
+                const py = y + Math.sin(angle) * r;
+                if (angle === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            
+            if (filled) {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawCrayonRect(ctx, x, y, width, height, color, radius = 10, filled = false) {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            
+            if (filled) {
+                const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+                gradient.addColorStop(0, lightenColor(color, 10));
+                gradient.addColorStop(1, color);
+                ctx.fillStyle = gradient;
+            }
+            
+            ctx.beginPath();
+            // 手绘风格的圆角矩形
+            const r = radius + (Math.random() - 0.5) * 2;
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + width - r, y + (Math.random() - 0.5) * 2);
+            ctx.quadraticCurveTo(x + width, y + r + (Math.random() - 0.5) * 2, x + width + (Math.random() - 0.5) * 2, y + r);
+            ctx.lineTo(x + width + (Math.random() - 0.5) * 2, y + height - r);
+            ctx.quadraticCurveTo(x + width, y + height - r, x + width - r, y + height);
+            ctx.lineTo(x + r, y + height);
+            ctx.quadraticCurveTo(x + r, y + height, x, y + height - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y + r, x + r, y);
+            ctx.closePath();
+            
+            if (filled) {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawCrayonText(ctx, text, x, y, color, fontSize, fontWeight = 'bold') {
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = `${fontWeight} ${fontSize}px 'Comic Sans MS', 'Chalkboard', cursive`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 轻微的位置偏移模拟手绘感
+            const offsetX = (Math.random() - 0.5) * 2;
+            const offsetY = (Math.random() - 0.5) * 2;
+            ctx.fillText(text, x + offsetX, y + offsetY);
+            ctx.restore();
+        }
+
+        function drawDoodlePattern(ctx, type, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            
+            switch(type) {
+                case 'stars':
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i * 4 * Math.PI) / 5;
+                        const px = x + Math.cos(angle) * size;
+                        const py = y + Math.sin(angle) * size;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                    break;
+                case 'dots':
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.arc(x + i * 10, y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = color;
+                        ctx.fill();
+                    }
+                    break;
+                case 'waves':
+                    ctx.beginPath();
+                    for (let i = 0; i < size * 2; i += 5) {
+                        const px = x + i;
+                        const py = y + Math.sin(i * 0.2) * 5;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                    break;
+            }
+            ctx.restore();
+        }
+
+        // 绘图函数 - 蜡笔手绘风格
+        function drawModern() {
+            // 纸张纹理背景
+            ctx.fillStyle = '#FFF8E7';
+            ctx.fillRect(0, 0, 800, 800);
+            
+            // 添加纸张纹理
+            for (let i = 0; i < 5000; i++) {
+                const x = Math.random() * 800;
+                const y = Math.random() * 800;
+                ctx.fillStyle = `rgba(200, 180, 160, ${Math.random() * 0.1})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // 手绘边框
+            drawCrayonRect(ctx, 40, 40, 720, 720, config.mainColor, 15, false);
+            drawCrayonRect(ctx, 50, 50, 700, 700, config.mainColor, 15, false);
+
+            // 装饰元素：星星
+            drawDoodlePattern(ctx, 'stars', 100, 100, 20, config.mainColor);
+            drawDoodlePattern(ctx, 'stars', 700, 150, 15, lightenColor(config.mainColor, 20));
+            drawDoodlePattern(ctx, 'stars', 120, 700, 18, lightenColor(config.mainColor, 10));
+
+            // 主标题区域 - 手绘云朵背景
+            drawCrayonCircle(ctx, 400, 280, 180, lightenColor(config.mainColor, 30), true);
+            drawCrayonCircle(ctx, 350, 290, 160, lightenColor(config.mainColor, 20), true);
+            drawCrayonCircle(ctx, 450, 290, 160, lightenColor(config.mainColor, 20), true);
+            
+            drawCrayonText(ctx, config.mainTitle, 400, 290, '#5D4037', 56, 'bold');
+
+            // 副标题
+            drawCrayonRect(ctx, 200, 380, 400, 60, lightenColor(config.mainColor, 15), 10, true);
+            drawCrayonText(ctx, config.subTitle, 400, 410, '#5D4037', 28, 'normal');
+
+            // 标签 - 蜡笔风格按钮
+            drawCrayonRect(ctx, 240, 480, 320, 70, config.mainColor, 35, true);
+            drawCrayonText(ctx, config.tagText, 400, 515, '#FFFFFF', 26, 'bold');
+
+            // 装饰：波浪线
+            drawDoodlePattern(ctx, 'waves', 250, 600, 300, lightenColor(config.mainColor, 10));
+
+            // 店铺名称
+            drawCrayonText(ctx, config.shopName, 400, 680, '#8B7355', 22, 'normal');
+
+            // 装饰：小圆点
+            drawDoodlePattern(ctx, 'dots', 650, 650, 30, config.mainColor);
+            drawDoodlePattern(ctx, 'dots', 100, 600, 30, lightenColor(config.mainColor, 20));
+        }
+
+        function drawMinimal() {
+            // 纸张纹理背景
+            ctx.fillStyle = '#FFFBF0';
+            ctx.fillRect(0, 0, 800, 800);
+            
+            // 添加纸张纹理
+            for (let i = 0; i < 4000; i++) {
+                const x = Math.random() * 800;
+                const y = Math.random() * 800;
+                ctx.fillStyle = `rgba(180, 160, 140, ${Math.random() * 0.08})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // 手绘角落装饰
+            drawDoodlePattern(ctx, 'stars', 80, 80, 25, config.mainColor);
+            drawDoodlePattern(ctx, 'stars', 720, 720, 25, config.mainColor);
+
+            // 主标题 - 简单手写风格
+            drawCrayonText(ctx, config.mainTitle, 400, 320, config.mainColor, 64, 'bold');
+            
+            // 下划线 - 手绘波浪线
+            ctx.save();
+            ctx.strokeStyle = config.mainColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            for (let i = -150; i <= 150; i += 5) {
+                const x = 400 + i;
+                const y = 380 + Math.sin(i * 0.1) * 8;
+                if (i === -150) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            // 副标题
+            drawCrayonText(ctx, config.subTitle, 400, 440, '#8B7355', 30, 'normal');
+
+            // 标签 - 手绘风格
+            drawCrayonRect(ctx, 260, 500, 280, 60, config.mainColor, 30, true);
+            drawCrayonText(ctx, config.tagText, 400, 530, '#FFFFFF', 24, 'bold');
+
+            // 店铺名称
+            drawCrayonText(ctx, config.shopName, 400, 650, '#A09080', 24, 'normal');
+
+            // 装饰：小花朵
+            for (let i = 0; i < 5; i++) {
+                const angle = (i / 5) * Math.PI * 2;
+                const x = 400 + Math.cos(angle) * 200;
+                const y = 320 + Math.sin(angle) * 200;
+                drawCrayonCircle(ctx, x, y, 8, lightenColor(config.mainColor, 20), true);
+            }
+        }
+
+        function drawGradient() {
+            // 彩色纸张背景
+            const bgGradient = ctx.createLinearGradient(0, 0, 800, 800);
+            bgGradient.addColorStop(0, '#FFF8E7');
+            bgGradient.addColorStop(0.5, '#FFF0F5');
+            bgGradient.addColorStop(1, '#F0FFF0');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, 800, 800);
+            
+            // 添加纸张纹理
+            for (let i = 0; i < 5000; i++) {
+                const x = Math.random() * 800;
+                const y = Math.random() * 800;
+                ctx.fillStyle = `rgba(200, 180, 160, ${Math.random() * 0.1})`;
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // 手绘云朵装饰
+            drawCrayonCircle(ctx, 150, 150, 80, '#87CEEB', true);
+            drawCrayonCircle(ctx, 200, 140, 70, '#87CEEB', true);
+            drawCrayonCircle(ctx, 650, 200, 60, '#FFB6C1', true);
+            drawCrayonCircle(ctx, 700, 220, 50, '#FFB6C1', true);
+
+            // 彩虹装饰
+            ctx.save();
+            const rainbowColors = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#9B59B6'];
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeStyle = rainbowColors[i];
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.arc(400, 300, 250 - i * 15, Math.PI, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 主标题 - 云朵背景
+            drawCrayonCircle(ctx, 400, 320, 200, '#FFFFFF', true);
+            drawCrayonText(ctx, config.mainTitle, 400, 320, config.mainColor, 58, 'bold');
+
+            // 副标题 - 彩带背景
+            drawCrayonRect(ctx, 180, 400, 440, 65, lightenColor(config.mainColor, 20), 12, true);
+            drawCrayonText(ctx, config.subTitle, 400, 432, '#5D4037', 28, 'normal');
+
+            // 标签 - 蜡笔风格
+            drawCrayonRect(ctx, 230, 500, 340, 75, config.mainColor, 38, true);
+            drawCrayonText(ctx, config.tagText, 400, 537, '#FFFFFF', 26, 'bold');
+
+            // 装饰：星星和点点
+            drawDoodlePattern(ctx, 'stars', 100, 650, 20, '#FFD700');
+            drawDoodlePattern(ctx, 'stars', 700, 680, 18, '#FF69B4');
+            drawDoodlePattern(ctx, 'dots', 120, 120, 30, config.mainColor);
+            drawDoodlePattern(ctx, 'dots', 680, 150, 30, lightenColor(config.mainColor, 20));
+
+            // 店铺名称
+            drawCrayonText(ctx, config.shopName, 400, 700, '#8B7355', 24, 'normal');
+
+            // 装饰：手绘太阳
+            drawCrayonCircle(ctx, 700, 100, 40, '#FFD700', true);
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const x = 700 + Math.cos(angle) * 60;
+                const y = 100 + Math.sin(angle) * 60;
+                drawCrayonCircle(ctx, x, y, 8, '#FFD700', true);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            switch(config.template) {
+                case 'minimal':
+                    drawMinimal();
+                    break;
+                case 'gradient':
+                    drawGradient();
+                    break;
+                case 'modern':
+                default:
+                    drawModern();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('mainTitle').addEventListener('input', (e) => {
+            config.mainTitle = e.target.value;
+            draw();
+        });
+
+        document.getElementById('subTitle').addEventListener('input', (e) => {
+            config.subTitle = e.target.value;
+            draw();
+        });
+
+        document.getElementById('tagText').addEventListener('input', (e) => {
+            config.tagText = e.target.value;
+            draw();
+        });
+
+        document.getElementById('shopName').addEventListener('input', (e) => {
+            config.shopName = e.target.value;
+            draw();
+        });
+
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                config.mainColor = option.dataset.color;
+                draw();
+            });
+        });
+
+        document.querySelectorAll('.template-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                config.template = btn.dataset.template;
+                draw();
+            });
+        });
+
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            config.darkMode = !config.darkMode;
+            document.getElementById('darkModeToggle').classList.toggle('active');
+            if (config.darkMode) {
+                document.body.style.backgroundColor = '#000000';
+            } else {
+                document.body.style.backgroundColor = '#F2F2F7';
+            }
+            draw();
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'twitter-cover.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initial Draw
+        draw();
+    </script>
+</body>
+</html>
