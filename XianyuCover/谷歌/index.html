@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google 账号封面生成器 - 专业谷歌系列封面</title>
+    <style>
+        :root {
+            --g-blue: #4285F4;
+            --g-red: #EA4335;
+            --g-yellow: #FBBC05;
+            --g-green: #34A853;
+            --bg-color: #f1f3f4;
+            --card-shadow: 0 1px 2px 0 rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+        }
+        
+        body {
+            font-family: 'Product Sans', 'Roboto', 'Segoe UI', 'PingFang SC', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+            color: #3c4043;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .header svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        h1 { 
+            font-size: 28px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 40px;
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: var(--card-shadow);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1100px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 350px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-size: 14px;
+            color: #5f6368;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input, select {
+            padding: 12px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        input:focus { 
+            border-color: var(--g-blue);
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        canvas {
+            width: 500px;
+            height: 500px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: #fff;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            font-size: 16px;
+            border-radius: 28px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-align: center;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--g-blue);
+            color: white;
+        }
+        .btn-primary:hover { 
+            background-color: #1a73e8;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,.3), 0 4px 8px 3px rgba(60,64,67,.15);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #dadce0;
+            color: var(--g-blue);
+        }
+        .btn-outline:hover {
+            background-color: rgba(66, 133, 244, 0.04);
+            border-color: #d2e3fc;
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .service-item {
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .service-item.active {
+            border-color: var(--g-blue);
+            background: rgba(66, 133, 244, 0.08);
+            color: var(--g-blue);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <svg viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"></path>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+        </svg>
+        <h1>Google 封面生成器</h1>
+    </div>
+
+    <div class="main-content">
+        <div class="controls">
+            <div class="input-group">
+                <label>业务类型</label>
+                <div class="service-grid" id="serviceGrid">
+                    <div class="service-item active" data-type="google">综合</div>
+                    <div class="service-item" data-type="play">Google Play</div>
+                    <div class="service-item" data-type="gmail">Gmail</div>
+                    <div class="service-item" data-type="voice">G-Voice</div>
+                    <div class="service-item" data-type="cloud">G-Cloud</div>
+                    <div class="service-item" data-type="ads">G-Ads</div>
+                    <div class="service-item" data-type="drive">Drive</div>
+                    <div class="service-item" data-type="youtube">YouTube</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>主标题 (产品名)</label>
+                <input type="text" id="mainTitle" value="Google 账号" placeholder="例如：谷歌老号 / 邮箱">
+            </div>
+
+            <div class="input-group">
+                <label>核心卖点 (副标题)</label>
+                <input type="text" id="subTitle" value="全功能解锁 · 纯净稳定" placeholder="例如：带密保 · 稳定如狗">
+            </div>
+
+            <div class="input-group">
+                <label>服务标签 (用空格或逗号分隔)</label>
+                <input type="text" id="tagText" value="不封号 / 24H发货 / 解锁GEMINI" placeholder="例如：不封号 24H发货 售后无忧">
+            </div>
+
+            <div class="input-group">
+                <label>底部水印 (店铺名)</label>
+                <input type="text" id="shopName" value="@COOLEROGENOUS">
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="downloadImage()">下载高清封面</button>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <canvas id="canvas" width="1000" height="1000"></canvas>
+            <p style="color: #5f6368; font-size: 13px;">实时预览窗口 (1000x1000 高清分辨率)</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let config = {
+            serviceType: 'google',
+            mainTitle: 'Google 账号',
+            subTitle: '全功能解锁 · 纯净稳定',
+            tagText: '不封号 / 24H发货 / 解锁GEMINI',
+            shopName: '@COOLEROGENOUS'
+        };
+
+        const colors = {
+            blue: '#4285F4',
+            red: '#EA4335',
+            yellow: '#FBBC05',
+            green: '#34A853',
+            dark: '#202124',
+            gray: '#5f6368',
+            lightGray: '#f8f9fa'
+        };
+
+        const serviceThemes = {
+            google: { name: 'Google 账号', icon: 'G' },
+            play: { name: 'Google Play', icon: 'P' },
+            gmail: { name: 'Gmail 邮箱', icon: 'M' },
+            voice: { name: 'Google Voice', icon: 'V' },
+            cloud: { name: 'Google Cloud', icon: 'C' },
+            ads: { name: 'Google Ads', icon: 'A' },
+            drive: { name: 'Google Drive', icon: 'D' },
+            youtube: { name: 'YouTube 频道', icon: 'Y' }
+        };
+
+        function init() {
+            // 绑定输入框
+            ['mainTitle', 'subTitle', 'tagText', 'shopName'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('input', (e) => {
+                    config[id] = e.target.value;
+                    updateCanvas();
+                });
+            });
+
+            // 绑定业务切换
+            const serviceItems = document.querySelectorAll('.service-item');
+            serviceItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    serviceItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    config.serviceType = item.getAttribute('data-type');
+                    
+                    // 自动填充一些默认值（如果没改过的话）
+                    if (config.mainTitle.includes('Google') || Object.values(serviceThemes).some(t => config.mainTitle === t.name)) {
+                        document.getElementById('mainTitle').value = serviceThemes[config.serviceType].name;
+                        config.mainTitle = serviceThemes[config.serviceType].name;
+                    }
+                    
+                    updateCanvas();
+                });
+            });
+
+            updateCanvas();
+        }
+
+        function updateCanvas() {
+            // 1. 背景
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 1000, 1000);
+
+            // 2. 顶部四色条 (Google Style)
+            const stripeHeight = 15;
+            ctx.fillStyle = colors.blue;   ctx.fillRect(0, 0, 250, stripeHeight);
+            ctx.fillStyle = colors.red;    ctx.fillRect(250, 0, 250, stripeHeight);
+            ctx.fillStyle = colors.yellow; ctx.fillRect(500, 0, 250, stripeHeight);
+            ctx.fillStyle = colors.green;  ctx.fillRect(750, 0, 250, stripeHeight);
+
+            // 3. 装饰元素 (轻微的背景网格或圆)
+            ctx.beginPath();
+            ctx.arc(900, 150, 200, 0, Math.PI * 2);
+            ctx.fillStyle = colors.blue + '08';
+            ctx.fill();
+
+            // 4. 中央主体卡片
+            const cardY = 250;
+            const cardH = 500;
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.05)';
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetY = 10;
+            
+            // 绘制圆角矩形
+            drawRoundedRect(ctx, 100, cardY, 800, cardH, 40);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#f1f3f4';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. 绘制业务 Logo (绘制一个简单的 Google G 风格或者占位符)
+            drawGoogleG(ctx, 500, cardY + 100, 60);
+
+            // 6. 文本绘制
+            ctx.textAlign = 'center';
+
+            // 主标题
+            ctx.fillStyle = colors.dark;
+            ctx.font = 'bold 84px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.mainTitle, 500, cardY + 260);
+
+            // 副标题 (卖点)
+            ctx.fillStyle = colors.blue;
+            ctx.font = 'bold 44px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.subTitle, 500, cardY + 350);
+
+            // 底部标签栏
+            ctx.fillStyle = colors.lightGray;
+            drawRoundedRect(ctx, 150, cardY + 400, 700, 60, 30);
+            ctx.fill();
+            
+            ctx.fillStyle = colors.gray;
+            ctx.font = '32px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.tagText, 500, cardY + 440);
+
+            // 7. 店铺名水印
+            ctx.fillStyle = '#bdc1c6';
+            ctx.font = '24px "Microsoft YaHei", sans-serif';
+            ctx.fillText(config.shopName, 500, 920);
+
+            // 8. 侧边装饰 (三个点)
+            ctx.fillStyle = colors.red;    ctx.beginPath(); ctx.arc(160, cardY + 50, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = colors.yellow; ctx.beginPath(); ctx.arc(200, cardY + 50, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = colors.green;  ctx.beginPath(); ctx.arc(240, cardY + 50, 10, 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function drawGoogleG(ctx, x, y, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // 简单的 G 字母绘制逻辑
+            ctx.font = 'bold ' + (size * 1.5) + 'px "Product Sans", Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // 绘制四色渐变感或单色
+            ctx.fillStyle = colors.blue;
+            ctx.fillText('G', 0, 0);
+            
+            ctx.restore();
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `google-cover-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
