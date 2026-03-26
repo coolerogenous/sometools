@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽象线条头像生成器</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --dark: #2f3542;
+            --light: #f1f2f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            font-size: 28px;
+        }
+
+        canvas {
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            cursor: pointer;
+            background: #fff;
+            margin-bottom: 25px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-gen {
+            background-color: var(--dark);
+            color: white;
+        }
+
+        .btn-save {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-gen:hover { background-color: #000; }
+        .btn-save:hover { background-color: #e84118; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>混沌线条生成器</h1>
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="controls">
+        <button class="btn-gen" onclick="init()">🎲 重新生成</button>
+        <button class="btn-save" onclick="save()">💾 保存</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // 辅助函数：获取随机整数
+    const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    // 辅助函数：获取随机颜色 (HSL模式，保证颜色鲜艳或柔和)
+    const randomColor = () => {
+        const hue = random(0, 360);
+        const sat = random(40, 100); // 饱和度
+        const light = random(30, 70); // 亮度
+        return `hsl(${hue}, ${sat}%, ${light}%)`;
+    };
+
+    // 1. 绘制背景
+    function drawBackground() {
+        // 随机浅色背景
+        const hue = random(0, 360);
+        ctx.fillStyle = `hsl(${hue}, 20%, 95%)`;
+        ctx.fillRect(0, 0, width, height);
+        
+        // 偶尔添加一些噪点背景
+        if (Math.random() > 0.5) {
+            ctx.fillStyle = `hsla(${hue}, 20%, 50%, 0.05)`;
+            for(let i=0; i<500; i++) {
+                ctx.fillRect(random(0, width), random(0, height), 2, 2);
+            }
+        }
+    }
+
+    // 2. 绘制流畅的贝塞尔曲线 (流动的线条)
+    function drawFlowLines() {
+        const linesCount = random(3, 8); // 线条数量
+        const color = randomColor();
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = random(2, 8);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let i = 0; i < linesCount; i++) {
+            ctx.beginPath();
+            // 随机起点
+            let x = random(0, width);
+            let y = random(0, height);
+            ctx.moveTo(x, y);
+
+            // 绘制曲线段
+            const segments = random(2, 5);
+            for (let j = 0; j < segments; j++) {
+                const cp1x = x + random(-100, 100);
+                const cp1y = y + random(-100, 100);
+                const cp2x = x + random(-100, 100);
+                const cp2y = y + random(-100, 100);
+                const endX = x + random(-150, 150);
+                const endY = y + random(-150, 150);
+                
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+                x = endX;
+                y = endY;
+            }
+            ctx.stroke();
+        }
+    }
+
+    // 3. 绘制杂乱涂鸦 (Scribbles)
+    function drawScribbles() {
+        const scribbleCount = random(1, 4);
+        
+        for (let i = 0; i < scribbleCount; i++) {
+            const color = randomColor();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = random(1, 3);
+            ctx.beginPath();
+            
+            let x = random(50, width - 50);
+            let y = random(50, height - 50);
+            ctx.moveTo(x, y);
+
+            // 快速抖动线条
+            for (let j = 0; j < 20; j++) {
+                x += random(-20, 20);
+                y += random(-20, 20);
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    // 4. 绘制随机几何碎片 (不规则多边形)
+    function drawShards() {
+        const shardCount = random(2, 5);
+        
+        for (let i = 0; i < shardCount; i++) {
+            ctx.fillStyle = randomColor();
+            ctx.beginPath();
+            const cx = random(50, width - 50);
+            const cy = random(50, height - 50);
+            const sides = random(3, 6);
+            const radius = random(20, 80);
+            
+            ctx.moveTo(cx + radius * Math.cos(0), cy + radius * Math.sin(0));
+            
+            for (let j = 1; j <= sides; j++) {
+                const angle = (j * 2 * Math.PI) / sides;
+                // 随机半径让形状不规则
+                const r = radius + random(-20, 20);
+                ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    // 5. 绘制连接线 (点与点的连线)
+    function drawConnections() {
+        const points = [];
+        const pointCount = random(5, 10);
+        
+        // 生成点
+        for(let i=0; i<pointCount; i++){
+            points.push({x: random(0, width), y: random(0, height)});
+        }
+
+        ctx.strokeStyle = randomColor();
+        ctx.lineWidth = random(1, 2);
+        
+        // 连接点
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for(let i=1; i<points.length; i++){
+            // 使用二次曲线让连线稍微弯曲
+            const xc = (points[i].x + points[i-1].x) / 2;
+            const yc = (points[i].y + points[i-1].y) / 2;
+            ctx.quadraticCurveTo(points[i-1].x, points[i-1].y, xc, yc);
+        }
+        ctx.stroke();
+        
+        // 绘制节点圆点
+        ctx.fillStyle = '#fff';
+        points.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, random(3, 8), 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+        });
+    }
+
+    // 主函数：组合所有元素
+    function init() {
+        // 1. 清空并画背景
+        ctx.clearRect(0, 0, width, height);
+        drawBackground();
+
+        // 2. 随机决定生成策略
+        const strategy = random(1, 4);
+
+        if (strategy === 1) {
+            // 风格：流动线条
+            drawFlowLines();
+            drawFlowLines(); // 画两层增加层次感
+        } else if (strategy === 2) {
+            // 风格：几何碎片
+            drawShards();
+            drawScribbles(); // 加点涂鸦装饰
+        } else if (strategy === 3) {
+            // 风格：抽象连线
+            drawConnections();
+            drawConnections();
+        } else {
+            // 风格：大杂烩
+            drawFlowLines();
+            drawShards();
+            drawScribbles();
+        }
+
+        // 3. 最后加一点“灵魂” (比如一个随机的中心点或边框)
+        if (Math.random() > 0.7) {
+            ctx.strokeStyle = randomColor();
+            ctx.lineWidth = 5;
+            ctx.strokeRect(10, 10, width-20, height-20);
+        }
+    }
+
+    // 保存功能
+    function save() {
+        const link = document.createElement('a');
+        link.download = 'abstract-avatar-' + Date.now() + '.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+
+    // 启动
+    init();
+
+</script>
+</body>
+</html>

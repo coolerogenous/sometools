@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>几何头像生成器</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f5f7;
+            --panel-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            background-color: #fff;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        canvas:hover {
+            transform: scale(1.02);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #357abd;
+        }
+
+        .btn-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .settings {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            background: none;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .color-picker-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>几何头像生成器</h1>
+    
+    <canvas id="avatarCanvas" width="300" height="300"></canvas>
+
+    <div class="controls">
+        <div class="settings">
+            <div class="color-picker-group">
+                <label for="bgColor">背景:</label>
+                <input type="color" id="bgColor" value="#4a90e2">
+            </div>
+            <div class="color-picker-group">
+                <label for="shapeColor">图形:</label>
+                <input type="color" id="shapeColor" value="#ffffff">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="generateRandom()">🎲 随机生成</button>
+            <button class="btn-primary" onclick="downloadAvatar()">💾 保存头像</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('avatarCanvas');
+    const ctx = canvas.getContext('2d');
+    const bgColorInput = document.getElementById('bgColor');
+    const shapeColorInput = document.getElementById('shapeColor');
+
+    // 初始化
+    window.onload = generateRandom;
+
+    // 监听颜色变化
+    bgColorInput.addEventListener('input', drawAvatar);
+    shapeColorInput.addEventListener('input', drawAvatar);
+
+    // 生成随机颜色
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // 生成随机整数
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // 核心绘制逻辑
+    function drawAvatar(styleConfig) {
+        const width = canvas.width;
+        const height = canvas.height;
+        const bgColor = bgColorInput.value;
+        const shapeColor = shapeColorInput.value;
+
+        // 1. 清空画布并绘制背景
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. 绘制图形
+        ctx.fillStyle = shapeColor;
+        ctx.strokeStyle = shapeColor;
+        ctx.lineWidth = 3;
+
+        // 根据配置绘制不同的几何组合
+        // 这里我们使用一种基于对称性的绘制方式，让头像看起来更协调
+        
+        ctx.save();
+        ctx.translate(width / 2, height / 2); // 将原点移到中心
+
+        const type = styleConfig.type; // 0: 圆圈, 1: 方块, 2: 线条, 3: 混合
+
+        if (type === 0 || type === 3) {
+            // 绘制同心圆/圆环
+            for(let i=1; i<=3; i++) {
+                ctx.beginPath();
+                ctx.arc(0, 0, i * 30, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            // 实心圆
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        if (type === 1 || type === 3) {
+            // 绘制矩形
+            ctx.fillRect(-40, -40, 80, 80);
+            ctx.strokeRect(-60, -60, 120, 120);
+        }
+
+        if (type === 2) {
+            // 绘制线条/放射状
+            for(let i=0; i<8; i++) {
+                ctx.rotate(Math.PI / 4);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -100);
+                ctx.stroke();
+            }
+        }
+
+        // 绘制一些随机装饰点
+        if (styleConfig.hasDots) {
+            ctx.fillStyle = shapeColor;
+            for(let i=0; i<10; i++) {
+                const x = getRandomInt(-100, 100);
+                const y = getRandomInt(-100, 100);
+                const r = getRandomInt(2, 8);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    // 随机生成函数
+    function generateRandom() {
+        // 随机颜色
+        bgColorInput.value = getRandomColor();
+        shapeColorInput.value = getRandomColor();
+        
+        // 随机图形类型 (0, 1, 2, 3)
+        const randomType = Math.floor(Math.random() * 4);
+        const hasDots = Math.random() > 0.5;
+
+        drawAvatar({
+            type: randomType,
+            hasDots: hasDots
+        });
+    }
+
+    // 下载图片
+    function downloadAvatar() {
+        const link = document.createElement('a');
+        link.download = 'my-avatar-' + Date.now() + '.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+</script>
+
+</body>
+</html>
